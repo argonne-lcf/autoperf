@@ -1,0 +1,14 @@
+# 
+# AutoPerf Make rules for Darshan
+#
+DARSHAN_STATIC_MOD_OBJS += lib/darshan-apxc.o
+DARSHAN_DYNAMIC_MOD_OBJS += lib/darshan-apxc.po
+
+VPATH += :$(srcdir)/../modules/autoperf/crayxc
+
+lib/darshan-apxc.o: lib/darshan-apxc.c darshan.h darshan-common.h $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/crayxc/darshan-apxc-log-format.h | lib
+        $(CC) $(CFLAGS) -c $< -o $@
+
+lib/darshan-apxc.po: lib/darshan-bgq.c darshan.h darshan-dynamic.h darshan-common.h $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/darshan-apxc-log-format.h | lib
+        $(CC) $(CFLAGS_SHARED) -c $< -o $@
+
