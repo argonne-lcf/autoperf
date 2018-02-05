@@ -20,17 +20,21 @@
 #include "darshan-dynamic.h"
 #include "darshan-apxc-log-format.h"
 
+#include "darshan-apxc-utils.h"
+
 /*
  * PAPI_events are defined by the Aries counters listed in the log header.
  */
-#define QUOTE(a) #a
-#define X(a) QUOTE(a),
+#define X(a) #a,
 static char* PAPI_events[] =
 {
-    APXC_RTR_COUNTERS
+    APXC_PERF_COUNTERS
 };
 #undef X
-#undef QUOTE
+
+#define MAX_GROUPS (128)
+#define MAX_CHASSIS (MAX_GROUPS*6)
+#define MAX_BLADES (MAX_CHASSIS*16)
 
 /*
  * <Description>
@@ -46,7 +50,7 @@ static char* PAPI_events[] =
 struct apxc_runtime
 {
     struct darshan_apxc_header_record *header_record;
-    struct darshan_apxc_router_record *rtr_record;
+    struct darshan_apxc_perf_record *perf_record;
     darshan_record_id header_id;
     darshan_record_id rtr_id;
     int PAPI_event_set;
@@ -78,17 +82,21 @@ static void apxc_shutdown(MPI_Comm mod_comm, darshan_record_id *shared_recs, int
  */
 static void initialize_counters (void)
 {
-    int i = 0;
+    int i;
+    int r;
     int code = 0;
 
     PAPI_library_init(PAPI_VER_CURRENT);
+    apxc_runtime->PAPI_event_set = PAPI_NULL;
     PAPI_create_eventset(&apxc_runtime->PAPI_event_set);
 
-    while(strcmp(PAPI_events[i], "APXC_RTR_NUM_INDICES") != 0)
+    /* start wtih first PAPI counter */
+    for (i = AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0;
+         strcmp(PAPI_events[i], "APXC_PERF_NUM_INDICES") != 0;
+         i++)
     {
         PAPI_event_name_to_code(PAPI_events[i], &code);
         PAPI_add_event(apxc_runtime->PAPI_event_set, code);
-        i++;
     }
 
     apxc_runtime->PAPI_event_count = i;
@@ -107,45 +115,22 @@ static void finalize_counters (void)
     return;
 }
 
-static void get_coords (void)
-{
-    FILE *f = fopen("/proc/cray_xt/cname","r");
-
-    if (f != NULL)
-    {
-        char a, b, c, d;
-        int racki, rackj, chassis, blade, nic;
-
-        /* format example: c1-0c1s2n1 c3-0c2s15n3 */
-        fscanf(f, "%c%d-%d%c%d%c%d%c%d", 
-           &a, &racki, &rackj, &b, &chassis, &c, &blade, &d, &nic);
-
-        fclose(f);
-
-        apxc_runtime->group   = racki/2 + rackj*6;
-        apxc_runtime->chassis = (racki%2) * 3 + chassis;
-        apxc_runtime->blade   = blade;
-        apxc_runtime->node    = nic;
-    }
-
-    return;
-}
-
 /*
  * Function which updates all the counter data
  */
-static void capture(struct darshan_apxc_router_record *rec,
+static void capture(struct darshan_apxc_perf_record *rec,
                     darshan_record_id rec_id)
 {
-    FILE *f;
-
-    PAPI_stop(apxc_runtime->PAPI_event_set, (long long*) rec->counters);
+    printf("capturuning counters\n");
+    PAPI_stop(apxc_runtime->PAPI_event_set,
+          (long long*) &rec->counters[AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0]);
     PAPI_reset(apxc_runtime->PAPI_event_set);
+    printf("complete\n");
 
-    rec->coord[0] = apxc_runtime->group;
-    rec->coord[1] = apxc_runtime->chassis;
-    rec->coord[2] = apxc_runtime->blade;
-    rec->coord[3] = apxc_runtime->node;
+    rec->counters[AR_RTR_GROUP]   = apxc_runtime->group;
+    rec->counters[AR_RTR_CHASSIS] = apxc_runtime->chassis;
+    rec->counters[AR_RTR_BLADE]   = apxc_runtime->blade;
+    rec->counters[AR_RTR_NODE]    = apxc_runtime->node;
 
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
@@ -156,7 +141,7 @@ static void capture(struct darshan_apxc_router_record *rec,
 void apxc_runtime_initialize()
 {
     int apxc_buf_size;
-    char rtr_rec_name[32];
+    char rtr_rec_name[128];
 
     APXC_LOCK();
 
@@ -168,7 +153,7 @@ void apxc_runtime_initialize()
     }
 
     apxc_buf_size = sizeof(struct darshan_apxc_header_record) + 
-                    sizeof(struct darshan_apxc_router_record);
+                    sizeof(struct darshan_apxc_perf_record);
 
     /* register the BG/Q module with the darshan-core component */
     darshan_core_register_module(
@@ -179,7 +164,7 @@ void apxc_runtime_initialize()
         NULL);
 
     /* not enough memory to fit crayxc module record */
-    if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_router_record))
+    if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
     {
         darshan_core_unregister_module(DARSHAN_APXC_MOD);
         APXC_UNLOCK();
@@ -219,20 +204,23 @@ void apxc_runtime_initialize()
         apxc_runtime->header_record->base_rec.rank = my_rank;
     }
 
-    get_coords();
+    get_xc_coords(&apxc_runtime->group,
+                  &apxc_runtime->chassis,
+                  &apxc_runtime->blade,
+                  &apxc_runtime->node);
 
-    sprintf(rtr_rec_name, "darshan-crayxc-rtr-%d%d%d",
+    sprintf(rtr_rec_name, "darshan-crayxc-rtr-%d-%d-%d",
             apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade);
 
     apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
 
-    apxc_runtime->rtr_record = darshan_core_register_record(
+    apxc_runtime->perf_record = darshan_core_register_record(
         apxc_runtime->rtr_id,
         NULL,
         DARSHAN_APXC_MOD,
-        sizeof(struct darshan_apxc_router_record),
+        sizeof(struct darshan_apxc_perf_record),
         NULL);
-    if(!(apxc_runtime->rtr_record))
+    if(!(apxc_runtime->perf_record))
     {
         darshan_core_unregister_module(DARSHAN_APXC_MOD);
         free(apxc_runtime);
@@ -267,9 +255,14 @@ static void apxc_shutdown(
     int router_count;
     int chassis_count;
     int group_count;
+    int r;
+    int mmode, rmmode;
+    int cmode, rcmode;
+    unsigned int *bitvec;
+    unsigned int bitlen;
+    unsigned int bitcnt;
+    unsigned int bitsiz;
     MPI_Comm router_comm;
-    MPI_Comm chassis_comm;
-    MPI_Comm group_comm;
 
     APXC_LOCK();
 
@@ -279,57 +272,133 @@ static void apxc_shutdown(
         return;
     }
 
-    /* collect data */
-    capture(apxc_runtime->rtr_record, apxc_runtime->rtr_id);
+    bitcnt = sizeof(unsigned int) * 8;
+    bitlen = sizeof(unsigned int) * (MAX_BLADES/bitcnt);
+    bitsiz = bitlen / sizeof(unsigned int);
+    bitvec = malloc(bitlen);
+    
+    /* collect perf counters */
+    capture(apxc_runtime->perf_record, apxc_runtime->rtr_id);
 
+    /* collect memory/cluster config */
+    mmode = get_memory_mode(apxc_runtime->node);
+    cmode = get_cluster_mode(apxc_runtime->node);
+
+    PMPI_Reduce(&mmode,
+                &rmmode, 1, MPI_INT, MPI_BOR, 0, MPI_COMM_WORLD);
+    PMPI_Reduce(&cmode,
+                &rcmode, 1, MPI_INT, MPI_BOR, 0, MPI_COMM_WORLD);
+
+    if (my_rank == 0)
+    {
+        apxc_runtime->header_record->memory_mode = mmode;
+        apxc_runtime->header_record->cluster_mode = cmode;
+        if (mmode != rmmode)
+            apxc_runtime->header_record->memory_mode |= (1 << 31);
+        if (cmode != rcmode)
+            apxc_runtime->header_record->cluster_mode |= (1 << 31);
+    }
+
+    /* count network dimensions */
+    if (bitvec)
+    {
+        int idx;
+        unsigned int uchassis;
+        unsigned int ublade;
+
+        /* group */
+        memset(bitvec, 0, bitlen);
+        idx = apxc_runtime->group / bitcnt;
+        bitvec[idx] |= (1 << apxc_runtime->group % bitcnt);
+        PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
+                     bitvec,
+                     bitsiz,
+                     MPI_INT,
+                     MPI_BOR,
+                     0,
+                     MPI_COMM_WORLD);
+        group_count = count_bits(bitvec, bitsiz);
+
+        /* chassis */
+        memset(bitvec, 0, bitlen);
+        uchassis = apxc_runtime->group * 6 + apxc_runtime->chassis;
+        idx = uchassis / bitcnt;
+        bitvec[idx] |= (1 << uchassis % bitcnt);
+        PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
+                    bitvec,
+                    bitsiz,
+                    MPI_INT,
+                    MPI_BOR,
+                    0,
+                    MPI_COMM_WORLD);
+        chassis_count = count_bits(bitvec, bitsiz);
+
+        /* blade */
+        memset(bitvec, 0, bitlen);
+        ublade = uchassis * 16 + apxc_runtime->blade;
+        idx = ublade / bitcnt;
+        bitvec[idx] |= (1 << uchassis % bitcnt);
+        PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
+                    bitvec,
+                    bitsiz,
+                    MPI_INT,
+                    MPI_BOR,
+                    0,
+                    MPI_COMM_WORLD);
+        router_count = count_bits(bitvec, bitsiz);
+
+        if (my_rank == 0)
+        {
+            apxc_runtime->header_record->nblades  = router_count;
+            apxc_runtime->header_record->nchassis = chassis_count;
+            apxc_runtime->header_record->ngroups  = group_count;
+        }
+        free(bitvec);
+    }
+    else
+    {
+        apxc_runtime->header_record->nblades  = 0;
+        apxc_runtime->header_record->nchassis = 0;
+        apxc_runtime->header_record->ngroups  = 0;
+    }
+    
     /*
      * reduce data
      *
      *  aggregate data from processes which share the same blade and avg.
      *  
      */ 
-    color = (apxc_runtime->group << 5) + \
-            (apxc_runtime->chassis << 2) + \
+    color = (apxc_runtime->group << (4+3)) + \
+            (apxc_runtime->chassis << 4) + \
             apxc_runtime->blade;
     PMPI_Comm_split(MPI_COMM_WORLD, color, my_rank, &router_comm);
-    PMPI_Comm_split(MPI_COMM_WORLD, (color & ~(0x3)), my_rank, &chassis_comm);
-    PMPI_Comm_split(MPI_COMM_WORLD, (color & ~(0x1f)), my_rank, &group_comm);
-
-    PMPI_Comm_size(chassis_comm, &chassis_count);
-    PMPI_Comm_size(group_comm,   &group_count);
     PMPI_Comm_rank(router_comm,  &router_rank);
     PMPI_Comm_size(router_comm,  &router_count);
 
-    PMPI_Reduce(apxc_runtime->rtr_record->counters,
-                apxc_runtime->rtr_record->counters,
-                apxc_runtime->PAPI_event_count,
+    PMPI_Reduce((router_rank?apxc_runtime->perf_record->counters:MPI_IN_PLACE),
+                apxc_runtime->perf_record->counters,
+                APXC_PERF_NUM_INDICES,
                 MPI_LONG_LONG_INT,
                 MPI_SUM,
                 0,
                 router_comm);
     if (router_rank == 0)
     {
-        for (i = 0; i < apxc_runtime->PAPI_event_count; i++)
+        for (i = 0; i < APXC_PERF_NUM_INDICES; i++)
         {
-            apxc_runtime->rtr_record->counters[i] /= router_count;
+            apxc_runtime->perf_record->counters[i] /= router_count;
         }
     }
     else
     {
         /* discard other ranks non-unique router blades */
-        *size -= sizeof(*apxc_runtime->rtr_record);
+        *size -= sizeof(*apxc_runtime->perf_record);
     }
 
-    if (my_rank == 0)
-    {
-        apxc_runtime->header_record->nblades  = router_count;
-        apxc_runtime->header_record->nchassis = chassis_count;
-        apxc_runtime->header_record->ngroups  = group_count;
-    }
 
     PMPI_Comm_free(&router_comm);
-    PMPI_Comm_free(&chassis_comm);
-    PMPI_Comm_free(&group_comm);
+    
+    finalize_counters();
 
     free(apxc_runtime);
     apxc_runtime = NULL;

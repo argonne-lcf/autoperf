@@ -23,7 +23,7 @@
 /* counter name strings for the BGQ module */
 #define X(a) #a,
 char *apxc_counter_names[] = {
-    APXC_RTR_COUNTERS
+    APXC_PERF_COUNTERS
 };
 #undef X
 
@@ -49,7 +49,7 @@ struct darshan_mod_logutil_funcs apxc_logutils =
 static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
 {
     struct darshan_apxc_header_record *hdr_rec;
-    struct darshan_apxc_router_record *rtr_rec;
+    struct darshan_apxc_perf_record *perf_rec;
     int rec_len;
     char *buffer, *p;
     int i;
@@ -62,7 +62,7 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     if (!*buf_p)
     {
         /* assume this is the largest possible record size */
-        buffer = malloc(sizeof(struct darshan_apxc_router_record));
+        buffer = malloc(sizeof(struct darshan_apxc_perf_record));
         if (!buffer)
         {
             return(-1);
@@ -95,7 +95,7 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
             first_rec = 0;
         }
         else
-            rec_len = sizeof(struct darshan_apxc_router_record);
+            rec_len = sizeof(struct darshan_apxc_perf_record);
 
         ret = darshan_log_get_mod(fd, DARSHAN_APXC_MOD, buffer, rec_len);
     }
@@ -110,22 +110,20 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
                 /* swap bytes if necessary */
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
-                DARSHAN_BSWAP64(&(hdr_rec->nblades));
-                DARSHAN_BSWAP64(&(hdr_rec->nchassis));
-                DARSHAN_BSWAP64(&(hdr_rec->ngroups));
+                DARSHAN_BSWAP32(&(hdr_rec->nblades));
+                DARSHAN_BSWAP32(&(hdr_rec->nchassis));
+                DARSHAN_BSWAP32(&(hdr_rec->ngroups));
+                DARSHAN_BSWAP32(&(hdr_rec->memory_mode));
+                DARSHAN_BSWAP32(&(hdr_rec->cluster_mode));
             }
             else
             {
-                rtr_rec = (struct darshan_apxc_router_record*)buffer;
+                perf_rec = (struct darshan_apxc_perf_record*)buffer;
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
-                for (i = 0; i < 4; i++)
+                for (i = 0; i < APXC_PERF_NUM_INDICES; i++)
                 {
-                    DARSHAN_BSWAP64(&rtr_rec->coord[i]);
-                }
-                for (i = 0; i < APXC_RTR_NUM_INDICES; i++)
-                {
-                    DARSHAN_BSWAP64(&rtr_rec->counters[i]);
+                    DARSHAN_BSWAP64(&perf_rec->counters[i]);
                 }
             }
         }
@@ -158,7 +156,7 @@ static int darshan_log_put_apxc_rec(darshan_fd fd, void* buf)
         first_rec = 0;
     }
     else
-        rec_len = sizeof(struct darshan_apxc_router_record);
+        rec_len = sizeof(struct darshan_apxc_perf_record);
     
     ret = darshan_log_put_mod(fd, DARSHAN_APXC_MOD, buf,
                               rec_len, DARSHAN_APXC_VER);
@@ -174,41 +172,49 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
     int i;
     static int first_rec = 1;
     struct darshan_apxc_header_record *hdr_rec;
-    struct darshan_apxc_router_record *rtr_rec;
+    struct darshan_apxc_perf_record *perf_rec;
 
     if (first_rec)
     { 
+        #define X(a) #a,
+        char *mmodes[] = { APXC_MEMORY_MODES };
+        char *cmodes[] = { APXC_CLUSTER_MODES };
+        #undef X
+
         hdr_rec = rec;
         DARSHAN_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "groups", hdr_rec->ngroups, file_name, "", "");
+            "groups", hdr_rec->ngroups, "", "", "");
         DARSHAN_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "chassis", hdr_rec->nchassis, file_name, "", "");
+            "chassis", hdr_rec->nchassis, "", "", "");
         DARSHAN_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "blades", hdr_rec->nblades, file_name, "", "");
+            "blades", hdr_rec->nblades, "", "", "");
+        DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+            hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
+            "memory_mode", mmodes[hdr_rec->memory_mode & ~(1<<31)], "", "", "");
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+            hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
+            "memory_mode_consistent", ((hdr_rec->memory_mode & (1<<31)) == 0), "", "", "");
+        DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+            hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
+            "cluster_mode", cmodes[hdr_rec->cluster_mode & ~(1<<31)], "", "", "");
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+            hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
+            "cluster_mode_consistent", ((hdr_rec->cluster_mode & (1<<31)) == 0), "", "", "");
         first_rec = 0;
     }
     else
     {
-        rtr_rec = rec;
-        char *coord_name[] = {"group", "chassis", "blade", "node"};
+        perf_rec = rec;
 
-        for (i = 0; i < 4; i++)
+        for(i = 0; i < APXC_PERF_NUM_INDICES; i++)
         {
             DARSHAN_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
-                rtr_rec->base_rec.rank, rtr_rec->base_rec.id,
-                coord_name[i], rtr_rec->coord[i],
-                file_name, "", "");
-        }
-
-        for(i = 0; i < APXC_RTR_NUM_INDICES; i++)
-        {
-            DARSHAN_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
-                rtr_rec->base_rec.rank, rtr_rec->base_rec.id,
-                apxc_counter_names[i], rtr_rec->counters[i],
-                file_name, "", "");
+                perf_rec->base_rec.rank, perf_rec->base_rec.id,
+                apxc_counter_names[i], perf_rec->counters[i],
+                "", "", "");
         }
     }
 
@@ -218,15 +224,19 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
 static void darshan_log_print_apxc_description(int ver)
 {
     printf("\n# description of APXC counters: %d\n", ver);
-    printf("#   groups: total number of groups.\n");
-    printf("#   chassis: total number of chassis.\n");
-    printf("#   blades: total number of blades.\n");
+    printf("#   groups: total number of groups\n");
+    printf("#   chassis: total number of chassis\n");
+    printf("#   blades: total number of blades\n");
+    printf("#   memory_mode: Intel Xeon memory mode\n");
+    printf("#   cluster_mode: Intel Xeon NUMA configuration\n");
+    printf("#   memory_mode_consistent: Intel Xeon memory mode consistent across all nodes\n");
+    printf("#   cluster_mode_consistent: Intel Xeon cluster mode consistent across all nodes\n");
     printf("#   router:\n");
-    printf("#     group:   group this router is in.\n");
-    printf("#     chassis: chassies this router is in.\n");
-    printf("#     blade:   blade this router is in.\n");
-    printf("#     node:    node connected to this router.\n");
-    printf("#     AR_RTR_x_y_INQ_PRF_INCOMING_FLIT_VC[0-7]: flits on VCz\n");
+    printf("#     group:   group this router is on\n");
+    printf("#     chassis: chassies this router is on\n");
+    printf("#     blade:   blade this router is on\n");
+    printf("#     node:    node connected to this router\n");
+    printf("#     AR_RTR_x_y_INQ_PRF_INCOMING_FLIT_VC[0-7]: flits on VCz of x y tile\n");
     printf("#     AR_RTR_x_y_INQ_PRF_ROWBUS_STALL_CNT: stalls on x y tile\n");
 
     return;

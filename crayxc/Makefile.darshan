@@ -13,9 +13,9 @@ CFLAGS_SHARED += \
          -DDARSHAN_USE_APXC \
          -I$(srcdir)/../modules/autoperf/crayxc
 
-lib/darshan-apxc.o: lib/darshan-apxc.c darshan.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apxc-log-format.h | lib
+lib/darshan-apxc.o: lib/darshan-apxc.c lib/darshan-apxc-utils.h darshan.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apxc-log-format.h | lib
 	$(CC) $(CFLAGS) -c $< -o $@
 
-lib/darshan-apxc.po: lib/darshan-apxc.c darshan.h darshan-dynamic.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apxc-log-format.h | lib
+lib/darshan-apxc.po: lib/darshan-apxc.c lib/darshan-apxc-utils.h darshan.h darshan-dynamic.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apxc-log-format.h | lib
 	$(CC) $(CFLAGS_SHARED) -c $< -o $@
 
