@@ -121,11 +121,9 @@ static void finalize_counters (void)
 static void capture(struct darshan_apxc_perf_record *rec,
                     darshan_record_id rec_id)
 {
-    printf("capturuning counters\n");
     PAPI_stop(apxc_runtime->PAPI_event_set,
           (long long*) &rec->counters[AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0]);
     PAPI_reset(apxc_runtime->PAPI_event_set);
-    printf("complete\n");
 
     rec->counters[AR_RTR_GROUP]   = apxc_runtime->group;
     rec->counters[AR_RTR_CHASSIS] = apxc_runtime->chassis;
@@ -202,6 +200,7 @@ void apxc_runtime_initialize()
         }
         apxc_runtime->header_record->base_rec.id = apxc_runtime->header_id;
         apxc_runtime->header_record->base_rec.rank = my_rank;
+        apxc_runtime->header_record->magic = DARSHAN_APXC_MAGIC;
     }
 
     get_xc_coords(&apxc_runtime->group,

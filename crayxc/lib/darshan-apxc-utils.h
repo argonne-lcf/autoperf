@@ -41,7 +41,6 @@ static int get_memory_mode (int node)
     sprintf(mcdram_str, "mcdram_cfg\\[%d\\]=", node);
     search_hwinfo(mcdram_str, memory_mode);
 
-    printf("memory mode = %s\n", memory_mode);
     if (strcmp(memory_mode, "flat") == 0)
     {
         return MM_FLAT;
@@ -70,7 +69,6 @@ static int get_cluster_mode (int node)
     sprintf(numa_str, "numa_cfg\\[%d\\]=", node);
     search_hwinfo(numa_str, cluster_mode);
 
-    printf("cluster mode = %s\n", cluster_mode);
     if (strcmp(cluster_mode, "a2a") == 0)
     {
         return CM_ALL2ALL;

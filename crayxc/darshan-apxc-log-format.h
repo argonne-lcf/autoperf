@@ -10,6 +10,15 @@
 /* current AutoPerf Cray XC log format version */
 #define DARSHAN_APXC_VER 1
 
+#define DARSHAN_APXC_MAGIC ('A'*0x100000000000000+\
+                            'U'*0x1000000000000+\
+                            'T'*0x10000000000+\
+                            'O'*0x100000000+\
+                            'P'*0x1000000+\
+                            'E'*0x10000+\
+                            'R'*0x100+\
+                            'F'*0x1)
+
 #define APXC_PERF_COUNTERS \
     /* non-PAPI counters first */\
     X(AR_RTR_GROUP) \
@@ -464,6 +473,7 @@ struct darshan_apxc_perf_record
 struct darshan_apxc_header_record
 {
     struct darshan_base_record base_rec;
+    int64_t magic;
     int nblades;
     int nchassis;
     int ngroups;
