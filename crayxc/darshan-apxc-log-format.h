@@ -419,7 +419,7 @@
     X(AR_RTR_PT_5_7_INQ_PRF_REQ_ROWBUS_STALL_CNT) \
     X(AR_RTR_PT_5_7_INQ_PRF_RSP_ROWBUS_STALL_CNT) \
     /* end of counters */\
-    X(APXC_PERF_NUM_INDICES)
+    X(APXC_NUM_INDICES)
 
 #define APXC_MEMORY_MODES \
     X(MM_UNKNOWN) \
@@ -467,7 +467,7 @@ enum apxc_cluster_modes
 struct darshan_apxc_perf_record
 {
     struct darshan_base_record base_rec;
-    int64_t counters[APXC_PERF_NUM_INDICES];
+    int64_t counters[APXC_NUM_INDICES];
 };
 
 struct darshan_apxc_header_record
