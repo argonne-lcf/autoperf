@@ -52,7 +52,7 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     struct darshan_apxc_header_record *hdr_rec;
     struct darshan_apxc_perf_record *perf_rec;
     int rec_len;
-    char *buffer, *p;
+    char *buffer;
     int i;
     int ret = -1;
     static int first_rec = 1;
@@ -120,8 +120,8 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
             else
             {
                 perf_rec = (struct darshan_apxc_perf_record*)buffer;
-                DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
-                DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
+                DARSHAN_BSWAP64(&(perf_rec->base_rec.id));
+                DARSHAN_BSWAP64(&(perf_rec->base_rec.rank));
                 for (i = 0; i < APXC_NUM_INDICES; i++)
                 {
                     DARSHAN_BSWAP64(&perf_rec->counters[i]);
