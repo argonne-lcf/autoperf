@@ -83,7 +83,6 @@ static void apxc_shutdown(MPI_Comm mod_comm, darshan_record_id *shared_recs, int
 static void initialize_counters (void)
 {
     int i;
-    int r;
     int code = 0;
 
     PAPI_library_init(PAPI_VER_CURRENT);
@@ -247,14 +246,12 @@ static void apxc_shutdown(
     void **buffer,
     int *size)
 {
-    int result;
     int i;
     int color;
     int router_rank;
     int router_count;
     int chassis_count;
     int group_count;
-    int r;
     int mmode, rmmode;
     int cmode, rcmode;
     unsigned int *bitvec;
