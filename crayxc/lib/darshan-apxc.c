@@ -92,7 +92,7 @@ static void initialize_counters (void)
 
     /* start wtih first PAPI counter */
     for (i = AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0;
-         strcmp(PAPI_events[i], "APXC_PERF_NUM_INDICES") != 0;
+         strcmp(PAPI_events[i], "APXC_NUM_INDICES") != 0;
          i++)
     {
         PAPI_event_name_to_code(PAPI_events[i], &code);
@@ -376,14 +376,14 @@ static void apxc_shutdown(
 
     PMPI_Reduce((router_rank?apxc_runtime->perf_record->counters:MPI_IN_PLACE),
                 apxc_runtime->perf_record->counters,
-                APXC_PERF_NUM_INDICES,
+                APXC_NUM_INDICES,
                 MPI_LONG_LONG_INT,
                 MPI_SUM,
                 0,
                 router_comm);
     if (router_rank == 0)
     {
-        for (i = 0; i < APXC_PERF_NUM_INDICES; i++)
+        for (i = 0; i < APXC_NUM_INDICES; i++)
         {
             apxc_runtime->perf_record->counters[i] /= router_count;
         }
