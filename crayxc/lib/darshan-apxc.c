@@ -333,7 +333,7 @@ static void apxc_shutdown(
         memset(bitvec, 0, bitlen);
         ublade = uchassis * 16 + apxc_runtime->blade;
         idx = ublade / bitcnt;
-        bitvec[idx] |= (1 << uchassis % bitcnt);
+        bitvec[idx] |= (1 << ublade % bitcnt);
         PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
                     bitvec,
                     bitsiz,
