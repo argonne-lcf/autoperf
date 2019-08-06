@@ -208,7 +208,7 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
 
         for(i = 0; i < APXC_NUM_INDICES; i++)
         {
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 perf_rec->base_rec.rank, perf_rec->base_rec.id,
                 apxc_counter_names[i], perf_rec->counters[i],
                 "", "", "");
@@ -411,7 +411,7 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             if (!prf_rec2)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                 apxc_counter_names[i], prf_rec1->counters[i],
                 "", "", "");
@@ -419,7 +419,7 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             else if (!prf_rec1)
             {
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                 apxc_counter_names[i], prf_rec2->counters[i],
                 "", "", "");
@@ -427,13 +427,13 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             else if (prf_rec1->counters[i] != prf_rec2->counters[i])
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                 apxc_counter_names[i], prf_rec1->counters[i],
                 "", "", "");
 
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                 apxc_counter_names[i], prf_rec2->counters[i],
                 "", "", "");

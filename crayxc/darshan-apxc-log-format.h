@@ -467,7 +467,7 @@ enum apxc_cluster_modes
 struct darshan_apxc_perf_record
 {
     struct darshan_base_record base_rec;
-    int64_t counters[APXC_NUM_INDICES];
+    uint64_t counters[APXC_NUM_INDICES];
 };
 
 struct darshan_apxc_header_record
