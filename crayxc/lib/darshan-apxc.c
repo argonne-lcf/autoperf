@@ -71,7 +71,16 @@ static int my_rank = -1;
 void apxc_runtime_initialize(void);
 
 /* forward declaration for shutdown function needed to interface with darshan-core */
-static void apxc_shutdown(MPI_Comm mod_comm, darshan_record_id *shared_recs, int shared_rec_count, void **buffer, int *size);
+#ifdef HAVE_MPI
+static void apxc_mpi_redux(
+    void *buffer, 
+    MPI_Comm mod_comm,
+    darshan_record_id *shared_recs, 
+    int shared_rec_count);
+#endif
+static void apxc_shutdown(
+        void **buffer, 
+        int *size);
 
 /* macros for obtaining/releasing the APXC module lock */
 #define APXC_LOCK() pthread_mutex_lock(&apxc_runtime_mutex)
@@ -140,7 +149,15 @@ void apxc_runtime_initialize()
     int apxc_buf_size;
     char rtr_rec_name[128];
 
+    darshan_module_funcs mod_funcs = {
+#ifdef HAVE_MPI
+        .mod_redux_func = &apxc_mpi_redux,
+#endif
+        .mod_shutdown_func = &apxc_shutdown
+        };
+
     APXC_LOCK();
+    
 
     /* don't do anything if already initialized */
     if(apxc_runtime)
@@ -149,13 +166,14 @@ void apxc_runtime_initialize()
         return;
     }
 
+
     apxc_buf_size = sizeof(struct darshan_apxc_header_record) + 
                     sizeof(struct darshan_apxc_perf_record);
 
-    /* register the BG/Q module with the darshan-core component */
+    /* register the APXC module with the darshan-core component */
     darshan_core_register_module(
         DARSHAN_APXC_MOD,
-        &apxc_shutdown,
+        mod_funcs,
         &apxc_buf_size,
         &my_rank,
         NULL);
@@ -239,12 +257,12 @@ void apxc_runtime_initialize()
  ********************************************************************************/
 
 /* Pass data for the crayxc module back to darshan-core to log to file. */
-static void apxc_shutdown(
+//#ifdef HAVE_MPI
+static void apxc_mpi_redux(
+    void *apxc_buf,
     MPI_Comm mod_comm,
     darshan_record_id *shared_recs,
-    int shared_rec_count,
-    void **buffer,
-    int *size)
+    int shared_rec_count)
 {
     int i;
     int color;
@@ -384,25 +402,43 @@ static void apxc_shutdown(
         {
             apxc_runtime->perf_record->counters[i] /= router_count;
         }
+            apxc_runtime->perf_record->base_rec.rank = -1;
     }
-    else
-    {
-        /* discard other ranks non-unique router blades */
-        *size -= sizeof(*apxc_runtime->perf_record);
-    }
-
 
     PMPI_Comm_free(&router_comm);
-    
-    finalize_counters();
-
-    free(apxc_runtime);
-    apxc_runtime = NULL;
 
     APXC_UNLOCK();
 
     return;
 }
+
+//#endif
+static void apxc_shutdown(
+    void **apxc_buf,
+    int *apxc_buf_sz)
+{
+    int apxc_rec_count;
+
+    APXC_LOCK();
+    assert(apxc_runtime);
+    *apxc_buf_sz = 0; 
+    
+    /*if (my_rank == 0) { 
+        *apxc_buf_sz += sizeof(*apxc_runtime->header_record); }
+    */
+    if (apxc_runtime->perf_record->base_rec.rank == -1) 
+     { 
+         *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
+     }
+
+    free(apxc_runtime);
+    apxc_runtime = NULL;
+    finalize_counters();
+
+    APXC_UNLOCK();
+    return;
+}
+
 
 /*
  * Local variables:
