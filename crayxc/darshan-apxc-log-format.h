@@ -20,12 +20,7 @@
                             'F'*0x1)
 
 #define APXC_PERF_COUNTERS \
-    /* non-PAPI counters first */\
-    X(AR_RTR_GROUP) \
-    X(AR_RTR_CHASSIS) \
-    X(AR_RTR_BLADE) \
-    X(AR_RTR_NODE) \
-    /* PAPI counters after this point */\
+    /* PAPI counters */\
     X(AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0) \
     X(AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC1) \
     X(AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC2) \
@@ -467,6 +462,11 @@ enum apxc_cluster_modes
 struct darshan_apxc_perf_record
 {
     struct darshan_base_record base_rec;
+    int group;
+    int chassis; 
+    int blade; 
+    int node;
+    int marked;  
     uint64_t counters[APXC_NUM_INDICES];
 };
 
@@ -479,6 +479,7 @@ struct darshan_apxc_header_record
     int ngroups;
     int memory_mode;
     int cluster_mode;
+    uint64_t appid;
 };
 
 #endif /* __DARSHAN_APXC_LOG_FORMAT_H */

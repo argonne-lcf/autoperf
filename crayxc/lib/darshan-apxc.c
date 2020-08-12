@@ -6,6 +6,7 @@
 
 #define _XOPEN_SOURCE 500
 #define _GNU_SOURCE
+#define csJOBID_ENV_STR "ALPS_APP_ID"
 
 #include "darshan-runtime-config.h"
 #include <stdio.h>
@@ -133,11 +134,11 @@ static void capture(struct darshan_apxc_perf_record *rec,
           (long long*) &rec->counters[AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0]);
     PAPI_reset(apxc_runtime->PAPI_event_set);
 
-    rec->counters[AR_RTR_GROUP]   = apxc_runtime->group;
-    rec->counters[AR_RTR_CHASSIS] = apxc_runtime->chassis;
-    rec->counters[AR_RTR_BLADE]   = apxc_runtime->blade;
-    rec->counters[AR_RTR_NODE]    = apxc_runtime->node;
-
+    rec->group   = apxc_runtime->group;
+    rec->chassis = apxc_runtime->chassis;
+    rec->blade   = apxc_runtime->blade;
+    rec->node    = apxc_runtime->node;
+    rec->marked  = 0;
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
 
@@ -311,6 +312,7 @@ static void apxc_mpi_redux(
             apxc_runtime->header_record->memory_mode |= (1 << 31);
         if (cmode != rcmode)
             apxc_runtime->header_record->cluster_mode |= (1 << 31);
+        apxc_runtime->header_record->appid = atoi((char*)getenv( csJOBID_ENV_STR ));
     }
 
     /* count network dimensions */
@@ -396,13 +398,14 @@ static void apxc_mpi_redux(
                 MPI_SUM,
                 0,
                 router_comm);
+
     if (router_rank == 0)
     {
         for (i = 0; i < APXC_NUM_INDICES; i++)
         {
             apxc_runtime->perf_record->counters[i] /= router_count;
         }
-            apxc_runtime->perf_record->base_rec.rank = -1;
+            apxc_runtime->perf_record->marked = -1;
     }
 
     PMPI_Comm_free(&router_comm);
@@ -423,22 +426,22 @@ static void apxc_shutdown(
     assert(apxc_runtime);
     *apxc_buf_sz = 0; 
     
-    /*if (my_rank == 0) { 
-        *apxc_buf_sz += sizeof(*apxc_runtime->header_record); }
-    */
-    if (apxc_runtime->perf_record->base_rec.rank == -1) 
+    if (my_rank == 0) { 
+        *apxc_buf_sz += sizeof(*apxc_runtime->header_record); 
+    }
+    
+    if (apxc_runtime->perf_record->marked == -1) 
      { 
-         *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
+       *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
      }
 
+    finalize_counters();
     free(apxc_runtime);
     apxc_runtime = NULL;
-    finalize_counters();
 
     APXC_UNLOCK();
     return;
 }
-
 
 /*
  * Local variables:
