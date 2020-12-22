@@ -1,0 +1,6 @@
+--wrap=MPI_Send
+--wrap=MPI_Recv
+--wrap=MPI_Allreduce
+--wrap=PMPI_Send
+--wrap=PMPI_Recv
+--wrap=PMPI_Allreduce
