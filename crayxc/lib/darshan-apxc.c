@@ -72,13 +72,13 @@ static int my_rank = -1;
 void apxc_runtime_initialize(void);
 
 /* forward declaration for shutdown function needed to interface with darshan-core */
-#ifdef HAVE_MPI
+//#ifdef HAVE_MPI
 static void apxc_mpi_redux(
     void *buffer, 
     MPI_Comm mod_comm,
     darshan_record_id *shared_recs, 
     int shared_rec_count);
-#endif
+//#endif
 static void apxc_shutdown(
         void **buffer, 
         int *size);
@@ -151,9 +151,9 @@ void apxc_runtime_initialize()
     char rtr_rec_name[128];
 
     darshan_module_funcs mod_funcs = {
-#ifdef HAVE_MPI
+//#ifdef HAVE_MPI
         .mod_redux_func = &apxc_mpi_redux,
-#endif
+//#endif
         .mod_shutdown_func = &apxc_shutdown
         };
 
@@ -178,7 +178,6 @@ void apxc_runtime_initialize()
         &apxc_buf_size,
         &my_rank,
         NULL);
-
     /* not enough memory to fit crayxc module record */
     if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
     {
@@ -204,7 +203,8 @@ void apxc_runtime_initialize()
         /* register the crayxc file record with darshan-core */
         apxc_runtime->header_record = darshan_core_register_record(
             apxc_runtime->header_id,
-            NULL,
+            //NULL,
+            "APXC",
             DARSHAN_APXC_MOD,
             sizeof(struct darshan_apxc_header_record),
             NULL);
@@ -228,12 +228,12 @@ void apxc_runtime_initialize()
 
     sprintf(rtr_rec_name, "darshan-crayxc-rtr-%d-%d-%d",
             apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade);
-
     apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
 
     apxc_runtime->perf_record = darshan_core_register_record(
         apxc_runtime->rtr_id,
-        NULL,
+        //NULL,
+        "APXC",
         DARSHAN_APXC_MOD,
         sizeof(struct darshan_apxc_perf_record),
         NULL);
@@ -247,7 +247,6 @@ void apxc_runtime_initialize()
     }
 
     initialize_counters();
-
     APXC_UNLOCK();
 
     return;
@@ -407,7 +406,6 @@ static void apxc_mpi_redux(
         }
             apxc_runtime->perf_record->marked = -1;
     }
-
     PMPI_Comm_free(&router_comm);
 
     APXC_UNLOCK();
@@ -434,7 +432,6 @@ static void apxc_shutdown(
      { 
        *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
      }
-
     finalize_counters();
     free(apxc_runtime);
     apxc_runtime = NULL;

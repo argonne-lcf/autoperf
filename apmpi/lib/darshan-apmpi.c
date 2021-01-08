@@ -19,107 +19,110 @@
 #include "uthash.h"
 #include "darshan.h"
 #include "darshan-dynamic.h"
-#include "darshan-apxc-log-format.h"
+#include "darshan-apmpi-log-format.h"
 
-#include "darshan-apxc-utils.h"
-
-/*
- * PAPI_events are defined by the Aries counters listed in the log header.
- */
-#define X(a) #a,
-static char* PAPI_events[] =
-{
-    APXC_PERF_COUNTERS
-};
-#undef X
-
-#define MAX_GROUPS (128)
-#define MAX_CHASSIS (MAX_GROUPS*6)
-#define MAX_BLADES (MAX_CHASSIS*16)
-
+#include "darshan-apmpi-utils.h"
+DARSHAN_FORWARD_DECL(PMPI_Send, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Recv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status));
+#if 0
+DARSHAN_FORWARD_DECL(PMPI_Isend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Irecv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Barrier, int, (MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Bcast, int, (void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Reduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm));
+#endif
+DARSHAN_FORWARD_DECL(PMPI_Allreduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm));
+#if 0
+DARSHAN_FORWARD_DECL(PMPI_Alltoall, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Alltoallv, int, (const void *sendbuf, const int *sendcounts, const int *sdispls,
+                 MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls,
+                 MPI_Datatype recvtype, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Allgather, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Allgatherv, int, ());
+DARSHAN_FORWARD_DECL(PMPI_Gather , int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+               void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Gatherv , int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                void *recvbuf, const int *recvcounts, const int *displs,
+                MPI_Datatype recvtype, int root, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Scatter, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+               void *recvbuf, int recvcount, MPI_Datatype recvtype, int root,
+               MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Scatterv, int, (const void *sendbuf, const int *sendcounts, const int *displs,
+                 MPI_Datatype sendtype, void *recvbuf, int recvcount,
+                 MPI_Datatype recvtype,
+                 int root, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Reduce_scatter, int, (const void *sendbuf, void *recvbuf, const int recvcounts[],
+                       MPI_Datatype datatype, MPI_Op op, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Scan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+             MPI_Op op, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Exscan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+               MPI_Op op, MPI_Comm comm));
+#endif
+//DARSHAN_FORWARD_DECL(PMPI_ , int, ());
 /*
  * <Description>
  * 
- * This module does not intercept any system calls. It just pulls data
- * from the personality struct at initialization.
+ * This module does intercept system calls. 
  */
 
 
 /*
  * Global runtime struct for tracking data needed at runtime
  */
-struct apxc_runtime
+struct apmpi_runtime
 {
-    struct darshan_apxc_header_record *header_record;
-    struct darshan_apxc_perf_record *perf_record;
-    darshan_record_id header_id;
-    darshan_record_id rtr_id;
-    int PAPI_event_set;
-    int PAPI_event_count;
-    int group;
-    int chassis;
-    int blade;
-    int node;
+    struct darshan_apmpi_perf_record *perf_record;
+    darshan_record_id rec_id;
 };
 
-static struct apxc_runtime *apxc_runtime = NULL;
-static pthread_mutex_t apxc_runtime_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static struct apmpi_runtime *apmpi_runtime = NULL;
+static pthread_mutex_t apmpi_runtime_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 /* my_rank indicates the MPI rank of this process */
 static int my_rank = -1;
 
-/* internal helper functions for the APXC module */
-void apxc_runtime_initialize(void);
+/* internal helper functions for the apmpi module */
+void apmpi_runtime_initialize(void);
 
 /* forward declaration for shutdown function needed to interface with darshan-core */
 #ifdef HAVE_MPI
-static void apxc_mpi_redux(
+static void apmpi_mpi_redux(
     void *buffer, 
     MPI_Comm mod_comm,
     darshan_record_id *shared_recs, 
     int shared_rec_count);
 #endif
-static void apxc_shutdown(
+static void apmpi_shutdown(
         void **buffer, 
         int *size);
 
-/* macros for obtaining/releasing the APXC module lock */
-#define APXC_LOCK() pthread_mutex_lock(&apxc_runtime_mutex)
-#define APXC_UNLOCK() pthread_mutex_unlock(&apxc_runtime_mutex)
+/* macros for obtaining/releasing the apmpi module lock */
+#define APMPI_LOCK() pthread_mutex_lock(&apmpi_runtime_mutex)
+#define APMPI_UNLOCK() pthread_mutex_unlock(&apmpi_runtime_mutex)
 
 /*
- * Initialize counters using PAPI
+ * Initialize counters 
  */
 static void initialize_counters (void)
 {
     int i;
     int code = 0;
-
-    PAPI_library_init(PAPI_VER_CURRENT);
-    apxc_runtime->PAPI_event_set = PAPI_NULL;
-    PAPI_create_eventset(&apxc_runtime->PAPI_event_set);
-
-    /* start wtih first PAPI counter */
-    for (i = AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0;
-         strcmp(PAPI_events[i], "APXC_NUM_INDICES") != 0;
-         i++)
+    for (i = 0; i < APMPI_NUM_INDICES; i++)
     {
-        PAPI_event_name_to_code(PAPI_events[i], &code);
-        PAPI_add_event(apxc_runtime->PAPI_event_set, code);
+        apmpi_runtime->perf_record->counters[i] = 0; 
     }
-
-    apxc_runtime->PAPI_event_count = i;
-
-    PAPI_start(apxc_runtime->PAPI_event_set);
-
+    for (i = 0; i < APMPI_F_NUM_INDICES; i++)
+    {
+        apmpi_runtime->perf_record->fcounters[i] = 0; 
+    }
     return;
 }
 
 static void finalize_counters (void)
 {
-    PAPI_cleanup_eventset(apxc_runtime->PAPI_event_set);
-    PAPI_destroy_eventset(&apxc_runtime->PAPI_event_set);
-    PAPI_shutdown();
 
     return;
 }
@@ -127,128 +130,87 @@ static void finalize_counters (void)
 /*
  * Function which updates all the counter data
  */
-static void capture(struct darshan_apxc_perf_record *rec,
+static void capture(struct darshan_apmpi_perf_record *rec,
                     darshan_record_id rec_id)
 {
-    PAPI_stop(apxc_runtime->PAPI_event_set,
-          (long long*) &rec->counters[AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0]);
-    PAPI_reset(apxc_runtime->PAPI_event_set);
-
-    rec->group   = apxc_runtime->group;
-    rec->chassis = apxc_runtime->chassis;
-    rec->blade   = apxc_runtime->blade;
-    rec->node    = apxc_runtime->node;
-    rec->marked  = 0;
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
 
     return;
 }
 
-void apxc_runtime_initialize()
+void apmpi_runtime_initialize()
 {
-    int apxc_buf_size;
-    char rtr_rec_name[128];
+    int apmpi_buf_size;
+    char rec_name[128];
 
     darshan_module_funcs mod_funcs = {
 #ifdef HAVE_MPI
-        .mod_redux_func = &apxc_mpi_redux,
+        .mod_redux_func = &apmpi_mpi_redux,
 #endif
-        .mod_shutdown_func = &apxc_shutdown
+        .mod_shutdown_func = &apmpi_shutdown
         };
 
-    APXC_LOCK();
+    APMPI_LOCK();
     
 
     /* don't do anything if already initialized */
-    if(apxc_runtime)
+    if(apmpi_runtime)
     {
-        APXC_UNLOCK();
+        APMPI_UNLOCK();
         return;
     }
 
 
-    apxc_buf_size = sizeof(struct darshan_apxc_header_record) + 
-                    sizeof(struct darshan_apxc_perf_record);
+    apmpi_buf_size = sizeof(struct darshan_apmpi_perf_record);
 
-    /* register the APXC module with the darshan-core component */
+    /* register the apmpi module with the darshan-core component */
     darshan_core_register_module(
-        DARSHAN_APXC_MOD,
+        DARSHAN_APMPI_MOD,
         mod_funcs,
-        &apxc_buf_size,
+        &apmpi_buf_size,
         &my_rank,
         NULL);
 
-    /* not enough memory to fit crayxc module record */
-    if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
+    /* not enough memory to fit apmpi module record */
+    if(apmpi_buf_size < sizeof(struct darshan_apmpi_perf_record))
     {
-        darshan_core_unregister_module(DARSHAN_APXC_MOD);
-        APXC_UNLOCK();
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
+        APMPI_UNLOCK();
         return;
     }
 
     /* initialize module's global state */
-    apxc_runtime = malloc(sizeof(*apxc_runtime));
-    if(!apxc_runtime)
+    apmpi_runtime = malloc(sizeof(*apmpi_runtime));
+    if(!apmpi_runtime)
     {
-        darshan_core_unregister_module(DARSHAN_APXC_MOD);
-        APXC_UNLOCK();
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
+        APMPI_UNLOCK();
         return;
     }
-    memset(apxc_runtime, 0, sizeof(*apxc_runtime));
+    memset(apmpi_runtime, 0, sizeof(*apmpi_runtime));
+    sprintf(rec_name, "darshan-apmpi-%d", my_rank);
+    apmpi_runtime->rec_id = darshan_core_gen_record_id(rec_name);
 
-    if (my_rank == 0)
-    {
-        apxc_runtime->header_id = darshan_core_gen_record_id("darshan-crayxc-header");
-
-        /* register the crayxc file record with darshan-core */
-        apxc_runtime->header_record = darshan_core_register_record(
-            apxc_runtime->header_id,
-            NULL,
-            DARSHAN_APXC_MOD,
-            sizeof(struct darshan_apxc_header_record),
-            NULL);
-        if(!(apxc_runtime->header_record))
-        {
-            darshan_core_unregister_module(DARSHAN_APXC_MOD);
-            free(apxc_runtime);
-            apxc_runtime = NULL;
-            APXC_UNLOCK();
-           return;
-        }
-        apxc_runtime->header_record->base_rec.id = apxc_runtime->header_id;
-        apxc_runtime->header_record->base_rec.rank = my_rank;
-        apxc_runtime->header_record->magic = DARSHAN_APXC_MAGIC;
-    }
-
-    get_xc_coords(&apxc_runtime->group,
-                  &apxc_runtime->chassis,
-                  &apxc_runtime->blade,
-                  &apxc_runtime->node);
-
-    sprintf(rtr_rec_name, "darshan-crayxc-rtr-%d-%d-%d",
-            apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade);
-
-    apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
-
-    apxc_runtime->perf_record = darshan_core_register_record(
-        apxc_runtime->rtr_id,
-        NULL,
-        DARSHAN_APXC_MOD,
-        sizeof(struct darshan_apxc_perf_record),
+    apmpi_runtime->perf_record = darshan_core_register_record(
+        apmpi_runtime->rec_id,
+        "APMPI",
+        DARSHAN_APMPI_MOD,
+        sizeof(struct darshan_apmpi_perf_record),
         NULL);
-    if(!(apxc_runtime->perf_record))
+    if(!(apmpi_runtime->perf_record))
     {
-        darshan_core_unregister_module(DARSHAN_APXC_MOD);
-        free(apxc_runtime);
-        apxc_runtime = NULL;
-        APXC_UNLOCK();
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
+        free(apmpi_runtime);
+        apmpi_runtime = NULL;
+        APMPI_UNLOCK();
         return;
     }
+    capture(apmpi_runtime->perf_record, apmpi_runtime->rec_id);
 
     initialize_counters();
 
-    APXC_UNLOCK();
+    APMPI_UNLOCK();
 
     return;
 }
@@ -257,191 +219,461 @@ void apxc_runtime_initialize()
  * shutdown function exported by this module for coordinating with darshan-core *
  ********************************************************************************/
 
-/* Pass data for the crayxc module back to darshan-core to log to file. */
+/* Pass data for the apmpi module back to darshan-core to log to file. */
 //#ifdef HAVE_MPI
-static void apxc_mpi_redux(
-    void *apxc_buf,
+static void apmpi_mpi_redux(
+    void *apmpi_buf,
     MPI_Comm mod_comm,
     darshan_record_id *shared_recs,
     int shared_rec_count)
 {
     int i;
-    int color;
-    int router_rank;
-    int router_count;
-    int chassis_count;
-    int group_count;
-    int mmode, rmmode;
-    int cmode, rcmode;
-    unsigned int *bitvec;
-    unsigned int bitlen;
-    unsigned int bitcnt;
-    unsigned int bitsiz;
-    MPI_Comm router_comm;
+    APMPI_LOCK();
 
-    APXC_LOCK();
-
-    if (!apxc_runtime)
+    if (!apmpi_runtime)
     {
-        APXC_UNLOCK();
+        APMPI_UNLOCK();
         return;
     }
-
-    bitcnt = sizeof(unsigned int) * 8;
-    bitlen = sizeof(unsigned int) * (MAX_BLADES/bitcnt);
-    bitsiz = bitlen / sizeof(unsigned int);
-    bitvec = malloc(bitlen);
-    
     /* collect perf counters */
-    capture(apxc_runtime->perf_record, apxc_runtime->rtr_id);
+    //capture(apmpi_runtime->perf_record, apmpi_runtime->rec_id);
 
-    /* collect memory/cluster config */
-    mmode = get_memory_mode(apxc_runtime->node);
-    cmode = get_cluster_mode(apxc_runtime->node);
-
-    PMPI_Reduce(&mmode,
-                &rmmode, 1, MPI_INT, MPI_BOR, 0, MPI_COMM_WORLD);
-    PMPI_Reduce(&cmode,
-                &rcmode, 1, MPI_INT, MPI_BOR, 0, MPI_COMM_WORLD);
-
-    if (my_rank == 0)
-    {
-        apxc_runtime->header_record->memory_mode = mmode;
-        apxc_runtime->header_record->cluster_mode = cmode;
-        if (mmode != rmmode)
-            apxc_runtime->header_record->memory_mode |= (1 << 31);
-        if (cmode != rcmode)
-            apxc_runtime->header_record->cluster_mode |= (1 << 31);
-        apxc_runtime->header_record->appid = atoi((char*)getenv( csJOBID_ENV_STR ));
-    }
-
-    /* count network dimensions */
-    if (bitvec)
-    {
-        int idx;
-        unsigned int uchassis;
-        unsigned int ublade;
-
-        /* group */
-        memset(bitvec, 0, bitlen);
-        idx = apxc_runtime->group / bitcnt;
-        bitvec[idx] |= (1 << apxc_runtime->group % bitcnt);
-        PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
-                     bitvec,
-                     bitsiz,
-                     MPI_INT,
-                     MPI_BOR,
-                     0,
-                     MPI_COMM_WORLD);
-        group_count = count_bits(bitvec, bitsiz);
-
-        /* chassis */
-        memset(bitvec, 0, bitlen);
-        uchassis = apxc_runtime->group * 6 + apxc_runtime->chassis;
-        idx = uchassis / bitcnt;
-        bitvec[idx] |= (1 << uchassis % bitcnt);
-        PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
-                    bitvec,
-                    bitsiz,
-                    MPI_INT,
-                    MPI_BOR,
-                    0,
-                    MPI_COMM_WORLD);
-        chassis_count = count_bits(bitvec, bitsiz);
-
-        /* blade */
-        memset(bitvec, 0, bitlen);
-        ublade = uchassis * 16 + apxc_runtime->blade;
-        idx = ublade / bitcnt;
-        bitvec[idx] |= (1 << ublade % bitcnt);
-        PMPI_Reduce((my_rank ? bitvec : MPI_IN_PLACE),
-                    bitvec,
-                    bitsiz,
-                    MPI_INT,
-                    MPI_BOR,
-                    0,
-                    MPI_COMM_WORLD);
-        router_count = count_bits(bitvec, bitsiz);
-
-        if (my_rank == 0)
-        {
-            apxc_runtime->header_record->nblades  = router_count;
-            apxc_runtime->header_record->nchassis = chassis_count;
-            apxc_runtime->header_record->ngroups  = group_count;
-        }
-        free(bitvec);
-    }
-    else
-    {
-        apxc_runtime->header_record->nblades  = 0;
-        apxc_runtime->header_record->nchassis = 0;
-        apxc_runtime->header_record->ngroups  = 0;
-    }
-    
-    /*
-     * reduce data
-     *
-     *  aggregate data from processes which share the same blade and avg.
-     *  
-     */ 
-    color = (apxc_runtime->group << (4+3)) + \
-            (apxc_runtime->chassis << 4) + \
-            apxc_runtime->blade;
-    PMPI_Comm_split(MPI_COMM_WORLD, color, my_rank, &router_comm);
-    PMPI_Comm_rank(router_comm,  &router_rank);
-    PMPI_Comm_size(router_comm,  &router_count);
-
-    PMPI_Reduce((router_rank?apxc_runtime->perf_record->counters:MPI_IN_PLACE),
-                apxc_runtime->perf_record->counters,
-                APXC_NUM_INDICES,
-                MPI_LONG_LONG_INT,
-                MPI_SUM,
-                0,
-                router_comm);
-
-    if (router_rank == 0)
-    {
-        for (i = 0; i < APXC_NUM_INDICES; i++)
-        {
-            apxc_runtime->perf_record->counters[i] /= router_count;
-        }
-            apxc_runtime->perf_record->marked = -1;
-    }
-
-    PMPI_Comm_free(&router_comm);
-
-    APXC_UNLOCK();
+    APMPI_UNLOCK();
 
     return;
 }
 
 //#endif
-static void apxc_shutdown(
-    void **apxc_buf,
-    int *apxc_buf_sz)
+static void apmpi_shutdown(
+    void **apmpi_buf,
+    int *apmpi_buf_sz)
 {
-    int apxc_rec_count;
+    int apmpi_rec_count;
 
-    APXC_LOCK();
-    assert(apxc_runtime);
-    *apxc_buf_sz = 0; 
-    
-    if (my_rank == 0) { 
-        *apxc_buf_sz += sizeof(*apxc_runtime->header_record); 
-    }
-    
-    if (apxc_runtime->perf_record->marked == -1) 
-     { 
-       *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
-     }
-
+    APMPI_LOCK();
+    assert(apmpi_runtime);
+    *apmpi_buf_sz = sizeof( *apmpi_runtime->perf_record);
     finalize_counters();
-    free(apxc_runtime);
-    apxc_runtime = NULL;
+    free(apmpi_runtime);
+    apmpi_runtime = NULL;
 
-    APXC_UNLOCK();
+    APMPI_UNLOCK();
     return;
 }
+
+#define APMPI_PRE_RECORD() do { \
+       APMPI_LOCK(); \
+       if(!darshan_core_disabled_instrumentation()) { \
+           if(!apmpi_runtime) { \
+               apmpi_runtime_initialize(); \
+           } \
+           if(apmpi_runtime) break; \
+       } \
+       APMPI_UNLOCK(); \
+       return(ret); \
+   } while(0)
+
+#define APMPI_POST_RECORD() do { \
+       APMPI_UNLOCK(); \
+   } while(0)
+
+/**********************************************************
+ *        Wrappers for MPI functions of interest       * 
+ **********************************************************/
+
+int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+             MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Send);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Send(buf, count, datatype, dest, tag, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    // Lock around the count - lock only if MPI_THREAD_MULTIPLE is used ... locking mutex
+    apmpi_runtime->perf_record->counters[AMPI_SEND_CALL_COUNT]++;
+    apmpi_runtime->perf_record->fcounters[AMPI_SEND_TOTAL_TIME]+=(tm2-tm1);
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Send, int,  (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm), MPI_Send)
+
+int DARSHAN_DECL(MPI_Recv)(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+             MPI_Comm comm, MPI_Status *status)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Recv);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Recv(buf, count, datatype, source, tag, comm, status);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_RECV_CALL_COUNT]++;
+    apmpi_runtime->perf_record->fcounters[AMPI_RECV_TOTAL_TIME]+=(tm2-tm1);
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Recv, int,  (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status), MPI_Recv)
+#if 0
+int DARSHAN_DECL(MPI_Isend)(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+             MPI_Comm comm, MPI_Request *request)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Isend);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Isend(buf, count, datatype, dest, tag, comm, request);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ISEND_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Isend, int,  (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request), MPI_Isend)
+
+int DARSHAN_DECL(MPI_Irecv)(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+             MPI_Comm comm, MPI_Request * request)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Irecv);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Irecv(buf, count, datatype, source, tag, comm, request);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_IRECV_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Irecv, int,  (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request), MPI_Irecv)
+
+
+int DARSHAN_DECL(MPI_Barrier)(MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+    
+    MAP_OR_FAIL(PMPI_Barrier);
+  
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Barrier(comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_BARRIER_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Barrier, int,  (MPI_Comm comm), MPI_Barrier)
+
+int DARSHAN_DECL(MPI_Bcast)(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+    
+    MAP_OR_FAIL(PMPI_Bcast);
+  
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Bcast(buffer, count, datatype, root, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_BCAST_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Bcast, int, (void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm), MPI_Bcast)
+
+int DARSHAN_DECL(MPI_Reduce)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
+             MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+    
+    MAP_OR_FAIL(PMPI_Reduce);
+  
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_REDUCE_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Reduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm), MPI_Reduce)
+#endif
+int DARSHAN_DECL(MPI_Allreduce)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
+             MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+    
+    MAP_OR_FAIL(PMPI_Allreduce);
+  
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ALLREDUCE_CALL_COUNT]++;
+    apmpi_runtime->perf_record->fcounters[AMPI_ALLREDUCE_TOTAL_TIME]+=(tm2-tm1);
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Allreduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm), MPI_Allreduce)
+
+#if 0
+int DARSHAN_DECL(MPI_Alltoall)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                 MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+    
+    MAP_OR_FAIL(PMPI_Alltoall);
+  
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ALLTOALL_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Alltoall, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                 MPI_Comm comm), MPI_Alltoall)
+
+int DARSHAN_DECL(MPI_Alltoallv)(const void *sendbuf, const int *sendcounts, const int *sdispls,
+                MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls,
+                MPI_Datatype recvtype, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+    
+    MAP_OR_FAIL(PMPI_Alltoallv);
+  
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ALLTOALLV_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Alltoallv, int, (const void *sendbuf, const int *sendcounts, const int *sdispls,
+                 MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls,
+                 MPI_Datatype recvtype, MPI_Comm comm), MPI_Alltoallv)
+
+int DARSHAN_DECL(MPI_Allgatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                   void *recvbuf, const int *recvcounts, const int *displs,
+                   MPI_Datatype recvtype, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Allgatherv);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ALLGATHERV_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+
+int DARSHAN_DECL(MPI_Allgather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Allgather);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ALLGATHER_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Allgather, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  MPI_Comm comm), MPI_Allgather)
+
+DARSHAN_WRAPPER_MAP(PMPI_Allgatherv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                   void *recvbuf, const int *recvcounts, const int *displs,
+                   MPI_Datatype recvtype, MPI_Comm comm), MPI_Allgatherv)
+
+int DARSHAN_DECL(MPI_Gather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+               void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Gather);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_GATHER_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Gather , int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+               void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm), MPI_Gather )
+
+int DARSHAN_DECL(MPI_Gatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                void *recvbuf, const int *recvcounts, const int *displs,
+                MPI_Datatype recvtype, int root, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Gatherv);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, root, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_GATHERV_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Gatherv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                void *recvbuf, const int *recvcounts, const int *displs,
+                MPI_Datatype recvtype, int root, MPI_Comm comm), MPI_Gatherv)
+
+int DARSHAN_DECL(MPI_Scatter)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+               void *recvbuf, int recvcount, MPI_Datatype recvtype, int root,
+               MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Scatter);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_SCATTER_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Scatter, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+               void *recvbuf, int recvcount, MPI_Datatype recvtype, int root,
+               MPI_Comm comm), MPI_Scatter)
+
+int DARSHAN_DECL(MPI_Scatterv)(const void *sendbuf, const int *sendcounts, const int *displs,
+                 MPI_Datatype sendtype, void *recvbuf, int recvcount,
+                 MPI_Datatype recvtype,
+                 int root, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Scatterv);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Scatterv(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_SCATTERV_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Scatterv, int, (const void *sendbuf, const int *sendcounts, const int *displs,
+                 MPI_Datatype sendtype, void *recvbuf, int recvcount,
+                 MPI_Datatype recvtype,
+                 int root, MPI_Comm comm), MPI_Scatterv)
+
+int DARSHAN_DECL(MPI_Reduce_scatter)(const void *sendbuf, void *recvbuf, const int recvcounts[],
+                       MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Reduce_scatter);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Reduce_scatter(sendbuf, recvbuf, recvcounts,
+                       datatype, op, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_REDUCE_SCATTER_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Reduce_scatter, int, (const void *sendbuf, void *recvbuf, const int recvcounts[],
+                       MPI_Datatype datatype, MPI_Op op, MPI_Comm comm), MPI_Reduce_scatter)
+
+int DARSHAN_DECL(MPI_Scan)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+             MPI_Op op, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Scan);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Scan(sendbuf, recvbuf, count, datatype, op, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_SCAN_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Scan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+             MPI_Op op, MPI_Comm comm), MPI_Scan )
+int DARSHAN_DECL(MPI_Exscan)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+               MPI_Op op, MPI_Comm comm)
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_Exscan);
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_Exscan(sendbuf, recvbuf, count, datatype, op, comm);
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_EXSCAN_COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Exscan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+               MPI_Op op, MPI_Comm comm), MPI_Exscan)
+#endif
+/*
+int DARSHAN_DECL(MPI_ )()
+{
+    int ret;
+    double tm1, tm2;
+
+    MAP_OR_FAIL(PMPI_ );
+
+    tm1 = darshan_core_wtime();
+    ret = __real_PMPI_();
+    tm2 = darshan_core_wtime();
+    APMPI_PRE_RECORD();
+    apmpi_runtime->perf_record->counters[AMPI_ _COUNT]++;
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_ , int, (), MPI_ )
+*/
+
 
 /*
  * Local variables:

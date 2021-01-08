@@ -4,14 +4,14 @@
 DARSHAN_STATIC_MOD_OBJS += lib/darshan-apmpi.o
 DARSHAN_DYNAMIC_MOD_OBJS += lib/darshan-apmpi.po
 
-VPATH += :$(srcdir)/../modules/autoperf/crayxc
+VPATH += :$(srcdir)/../modules/autoperf/apmpi
 CFLAGS += \
-         -DDARSHAN_USE_apmpi \
-         -I$(srcdir)/../modules/autoperf/crayxc
+         -DDARSHAN_USE_APMPI \
+         -I$(srcdir)/../modules/autoperf/apmpi
 
 CFLAGS_SHARED += \
-         -DDARSHAN_USE_apmpi \
-         -I$(srcdir)/../modules/autoperf/crayxc
+         -DDARSHAN_USE_APMPI \
+         -I$(srcdir)/../modules/autoperf/apmpi
 
 lib/darshan-apmpi.o: lib/darshan-apmpi.c lib/darshan-apmpi-utils.h darshan.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apmpi-log-format.h | lib
 	$(CC) $(CFLAGS) -c $< -o $@
