@@ -294,8 +294,8 @@ int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, in
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
     // Lock around the count - lock only if MPI_THREAD_MULTIPLE is used ... locking mutex
-    apmpi_runtime->perf_record->counters[AMPI_SEND_CALL_COUNT]++;
-    apmpi_runtime->perf_record->fcounters[AMPI_SEND_TOTAL_TIME]+=(tm2-tm1);
+    apmpi_runtime->perf_record->counters[MPI_SEND_CALL_COUNT]++;
+    apmpi_runtime->perf_record->fcounters[MPI_SEND_TOTAL_TIME]+=(tm2-tm1);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -313,8 +313,8 @@ int DARSHAN_DECL(MPI_Recv)(void *buf, int count, MPI_Datatype datatype, int sour
     ret = __real_PMPI_Recv(buf, count, datatype, source, tag, comm, status);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_RECV_CALL_COUNT]++;
-    apmpi_runtime->perf_record->fcounters[AMPI_RECV_TOTAL_TIME]+=(tm2-tm1);
+    apmpi_runtime->perf_record->counters[MPI_RECV_CALL_COUNT]++;
+    apmpi_runtime->perf_record->fcounters[MPI_RECV_TOTAL_TIME]+=(tm2-tm1);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -332,7 +332,7 @@ int DARSHAN_DECL(MPI_Isend)(const void *buf, int count, MPI_Datatype datatype, i
     ret = __real_PMPI_Isend(buf, count, datatype, dest, tag, comm, request);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ISEND_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_ISEND_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -350,7 +350,7 @@ int DARSHAN_DECL(MPI_Irecv)(void *buf, int count, MPI_Datatype datatype, int sou
     ret = __real_PMPI_Irecv(buf, count, datatype, source, tag, comm, request);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_IRECV_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_IRECV_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -368,7 +368,7 @@ int DARSHAN_DECL(MPI_Barrier)(MPI_Comm comm)
     ret = __real_PMPI_Barrier(comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_BARRIER_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_BARRIER_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -385,7 +385,7 @@ int DARSHAN_DECL(MPI_Bcast)(void *buffer, int count, MPI_Datatype datatype, int 
     ret = __real_PMPI_Bcast(buffer, count, datatype, root, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_BCAST_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_BCAST_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -403,7 +403,7 @@ int DARSHAN_DECL(MPI_Reduce)(const void *sendbuf, void *recvbuf, int count, MPI_
     ret = __real_PMPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_REDUCE_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_REDUCE_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -421,8 +421,8 @@ int DARSHAN_DECL(MPI_Allreduce)(const void *sendbuf, void *recvbuf, int count, M
     ret = __real_PMPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ALLREDUCE_CALL_COUNT]++;
-    apmpi_runtime->perf_record->fcounters[AMPI_ALLREDUCE_TOTAL_TIME]+=(tm2-tm1);
+    apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_CALL_COUNT]++;
+    apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_TOTAL_TIME]+=(tm2-tm1);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -442,7 +442,7 @@ int DARSHAN_DECL(MPI_Alltoall)(const void *sendbuf, int sendcount, MPI_Datatype 
     ret = __real_PMPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ALLTOALL_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_ALLTOALL_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -463,7 +463,7 @@ int DARSHAN_DECL(MPI_Alltoallv)(const void *sendbuf, const int *sendcounts, cons
     ret = __real_PMPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ALLTOALLV_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_ALLTOALLV_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -484,7 +484,7 @@ int DARSHAN_DECL(MPI_Allgatherv)(const void *sendbuf, int sendcount, MPI_Datatyp
     ret = __real_PMPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ALLGATHERV_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_ALLGATHERV_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -502,7 +502,7 @@ int DARSHAN_DECL(MPI_Allgather)(const void *sendbuf, int sendcount, MPI_Datatype
     ret = __real_PMPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ALLGATHER_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_ALLGATHER_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -526,7 +526,7 @@ int DARSHAN_DECL(MPI_Gather)(const void *sendbuf, int sendcount, MPI_Datatype se
     ret = __real_PMPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_GATHER_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_GATHER_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -546,7 +546,7 @@ int DARSHAN_DECL(MPI_Gatherv)(const void *sendbuf, int sendcount, MPI_Datatype s
     ret = __real_PMPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, root, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_GATHERV_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_GATHERV_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -567,7 +567,7 @@ int DARSHAN_DECL(MPI_Scatter)(const void *sendbuf, int sendcount, MPI_Datatype s
     ret = __real_PMPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_SCATTER_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_SCATTER_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -589,7 +589,7 @@ int DARSHAN_DECL(MPI_Scatterv)(const void *sendbuf, const int *sendcounts, const
     ret = __real_PMPI_Scatterv(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_SCATTERV_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_SCATTERV_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -611,7 +611,7 @@ int DARSHAN_DECL(MPI_Reduce_scatter)(const void *sendbuf, void *recvbuf, const i
                        datatype, op, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_REDUCE_SCATTER_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_REDUCE_SCATTER_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -630,7 +630,7 @@ int DARSHAN_DECL(MPI_Scan)(const void *sendbuf, void *recvbuf, int count, MPI_Da
     ret = __real_PMPI_Scan(sendbuf, recvbuf, count, datatype, op, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_SCAN_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_SCAN_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -648,7 +648,7 @@ int DARSHAN_DECL(MPI_Exscan)(const void *sendbuf, void *recvbuf, int count, MPI_
     ret = __real_PMPI_Exscan(sendbuf, recvbuf, count, datatype, op, comm);
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_EXSCAN_COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_EXSCAN_COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
@@ -667,7 +667,7 @@ int DARSHAN_DECL(MPI_ )()
     ret = __real_PMPI_();
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[AMPI_ _COUNT]++;
+    apmpi_runtime->perf_record->counters[MPI_ _COUNT]++;
     APMPI_POST_RECORD();
     return ret;
 }
