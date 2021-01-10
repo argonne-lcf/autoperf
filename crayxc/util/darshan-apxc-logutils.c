@@ -138,14 +138,14 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     }
     else if (ret < 0)
     {
-//      *buf_p = NULL;
-//       if (buffer) free(buffer);
+      *buf_p = NULL;
+       if (buffer) free(buffer);
         return(-1);
     }
     else
     {
-//       *buf_p = NULL;
-//       if (buffer) free(buffer);
+       *buf_p = NULL;
+       if (buffer) free(buffer);
         return(0);
     }
 }

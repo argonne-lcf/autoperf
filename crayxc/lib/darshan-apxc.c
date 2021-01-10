@@ -99,7 +99,7 @@ static void initialize_counters (void)
     apxc_runtime->PAPI_event_set = PAPI_NULL;
     PAPI_create_eventset(&apxc_runtime->PAPI_event_set);
 
-    /* start wtih first PAPI counter */
+    /* start with first PAPI counter */
     for (i = AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0;
          strcmp(PAPI_events[i], "APXC_NUM_INDICES") != 0;
          i++)
@@ -279,7 +279,7 @@ static void apxc_mpi_redux(
     MPI_Comm router_comm;
 
     APXC_LOCK();
-
+    printf("-------- ****** -------- Inside apxc_mpi_redux\n");
     if (!apxc_runtime)
     {
         APXC_UNLOCK();

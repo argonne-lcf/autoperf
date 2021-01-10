@@ -50,7 +50,14 @@
 
 #define Z(a) \
          X(a ## _CALL_COUNT), \
-         X(a ## _MSG_SIZE),
+	 X(a ## _TOTAL_BYTES), \
+         X(a ## _MSG_SIZE_AGG_0_256), \
+         X(a ## _MSG_SIZE_AGG_256_1K), \
+         X(a ## _MSG_SIZE_AGG_1K_32K), \
+         X(a ## _MSG_SIZE_AGG_32K_256K), \
+         X(a ## _MSG_SIZE_AGG_256K_1M), \
+         X(a ## _MSG_SIZE_AGG_1M_4M), \
+         X(a ## _MSG_SIZE_AGG_4M_PLUS), \
 
 #define Y(a) \
 	X(a ## _TOTAL_TIME),
@@ -67,8 +74,8 @@ enum darshan_apmpi_f_mpiop_indices
     APMPI_PERF_F_COUNTERS
 };
 #undef X
-#undef Y
-#undef Z
+//undef Y
+//undef Z
 /*
 #define X(a) a,
 // integer counters for the "MPI" example module 

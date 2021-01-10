@@ -22,12 +22,7 @@
 
 /* counter name strings for the MPI module */
 //#define X(a) #a,
-#define Z(a) \
-         X(a ## _CALL_COUNT), \
-        X(a ## _MSG_SIZE),
 
-#define Y(a) \
-        X(a ## _TOTAL_TIME),
 
 #define X(a) #a
 
@@ -38,8 +33,6 @@ char *apmpi_f_counter_names[] = {
     APMPI_PERF_F_COUNTERS
 };
 #undef X
-#undef Y
-#undef Z
 static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p);
 static int darshan_log_put_apmpi_rec(darshan_fd fd, void* buf);
 static void darshan_log_print_apmpi_rec(void *file_rec,

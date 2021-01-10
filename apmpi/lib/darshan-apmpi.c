@@ -22,6 +22,52 @@
 #include "darshan-apmpi-log-format.h"
 
 #include "darshan-apmpi-utils.h"
+
+typedef long long ap_bytes_t;
+
+#define BYTECOUNT(TYPE, COUNT) \
+          int tsize; \
+          PMPI_Type_size(TYPE, &tsize); \
+          ap_bytes_t bytes = (COUNT) * tsize
+
+#define BYTECOUNTND(TYPE, COUNT) \
+          int tsize2; \
+          PMPI_Type_size(TYPE, &tsize2); \
+          bytes = (COUNT) * tsize2
+
+/* increment histogram bucket depending on the given __value
+ *
+ * NOTE: This macro can be used to build a histogram of access
+ * sizes, offsets, etc. It assumes a 8-bucket histogram, with
+ * __bucket_base_p pointing to the first counter in the sequence
+ * of buckets (i.e., the smallest bucket). The size ranges of each
+ * bucket are:
+ *      * 0 - 256 bytes
+ *      * 256 - 1 KiB
+ *      * 1 KiB - 32 KiB
+ *      * 32 KiB - 256 KiB
+ *      * 256 KiB - 1 MiB
+ *      * 1 MiB - 4 MiB
+ *      * 4 MiB +
+ */
+#define DARSHAN_MSG_BUCKET_INC(__bucket_base_p, __value) do {\
+    if(__value < 257) \
+        *(__bucket_base_p) += 1; \
+    else if(__value < 1025) \
+        *(__bucket_base_p + 1) += 1; \
+    else if(__value < 32769) \
+        *(__bucket_base_p + 2) += 1; \
+    else if(__value < 262145) \
+        *(__bucket_base_p + 3) += 1; \
+    else if(__value < 1048577) \
+        *(__bucket_base_p + 4) += 1; \
+    else if(__value < 4194305) \
+        *(__bucket_base_p + 5) += 1; \
+    else \
+        *(__bucket_base_p + 6) += 1; \
+} while(0)
+
+
 DARSHAN_FORWARD_DECL(PMPI_Send, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Recv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status));
 #if 0
@@ -286,6 +332,7 @@ int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, in
 {
     int ret;
     double tm1, tm2;
+    int size;
 
     MAP_OR_FAIL(PMPI_Send);
 
@@ -295,6 +342,9 @@ int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, in
     APMPI_PRE_RECORD();
     // Lock around the count - lock only if MPI_THREAD_MULTIPLE is used ... locking mutex
     apmpi_runtime->perf_record->counters[MPI_SEND_CALL_COUNT]++;
+    BYTECOUNT(datatype, count);
+    apmpi_runtime->perf_record->counters[MPI_SEND_TOTAL_BYTES] += bytes;
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_SEND_MSG_SIZE_AGG_0_256]), bytes);
     apmpi_runtime->perf_record->fcounters[MPI_SEND_TOTAL_TIME]+=(tm2-tm1);
     APMPI_POST_RECORD();
     return ret;
@@ -314,6 +364,9 @@ int DARSHAN_DECL(MPI_Recv)(void *buf, int count, MPI_Datatype datatype, int sour
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
     apmpi_runtime->perf_record->counters[MPI_RECV_CALL_COUNT]++;
+    BYTECOUNT(datatype, count);
+    apmpi_runtime->perf_record->counters[MPI_RECV_TOTAL_BYTES] += bytes;
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_RECV_MSG_SIZE_AGG_0_256]), bytes);
     apmpi_runtime->perf_record->fcounters[MPI_RECV_TOTAL_TIME]+=(tm2-tm1);
     APMPI_POST_RECORD();
     return ret;
@@ -422,6 +475,9 @@ int DARSHAN_DECL(MPI_Allreduce)(const void *sendbuf, void *recvbuf, int count, M
     tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
     apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_CALL_COUNT]++;
+    BYTECOUNT(datatype, count);
+    apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_TOTAL_BYTES] += bytes;
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_MSG_SIZE_AGG_0_256]), bytes);
     apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_TOTAL_TIME]+=(tm2-tm1);
     APMPI_POST_RECORD();
     return ret;
