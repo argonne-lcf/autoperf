@@ -53,11 +53,10 @@
 	 X(a ## _TOTAL_BYTES), \
          X(a ## _MSG_SIZE_AGG_0_256), \
          X(a ## _MSG_SIZE_AGG_256_1K), \
-         X(a ## _MSG_SIZE_AGG_1K_32K), \
-         X(a ## _MSG_SIZE_AGG_32K_256K), \
+         X(a ## _MSG_SIZE_AGG_1K_8K), \
+         X(a ## _MSG_SIZE_AGG_8K_256K), \
          X(a ## _MSG_SIZE_AGG_256K_1M), \
-         X(a ## _MSG_SIZE_AGG_1M_4M), \
-         X(a ## _MSG_SIZE_AGG_4M_PLUS), \
+         X(a ## _MSG_SIZE_AGG_1M_PLUS), \
 
 #define Y(a) \
 	X(a ## _TOTAL_TIME),

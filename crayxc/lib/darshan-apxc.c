@@ -178,6 +178,8 @@ void apxc_runtime_initialize()
         &apxc_buf_size,
         &my_rank,
         NULL);
+
+    printf("L 182 --- my_rank: %d apxc_buf_size:%d \n", my_rank, apxc_buf_size);
     /* not enough memory to fit crayxc module record */
     if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
     {
@@ -204,7 +206,7 @@ void apxc_runtime_initialize()
         apxc_runtime->header_record = darshan_core_register_record(
             apxc_runtime->header_id,
             //NULL,
-            "APXC",
+            "darshan-crayxc-header",
             DARSHAN_APXC_MOD,
             sizeof(struct darshan_apxc_header_record),
             NULL);
@@ -228,12 +230,14 @@ void apxc_runtime_initialize()
 
     sprintf(rtr_rec_name, "darshan-crayxc-rtr-%d-%d-%d",
             apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade);
-    apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
-
+    //apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
+    apxc_runtime->rtr_id = darshan_core_gen_record_id("APXC");
+    printf("L 234 --- my_rank: %d apxc_runtime->rtr_id:%lu rtr_rec_name: %s g: %d c: %d b: %d n: %d \n", my_rank, apxc_runtime->rtr_id, rtr_rec_name, apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade, apxc_runtime->node);
     apxc_runtime->perf_record = darshan_core_register_record(
         apxc_runtime->rtr_id,
         //NULL,
-        "APXC",
+        "APXC",   // we want the record for each rank to be treated as shared records so that mpi_redux can operate on
+        //rtr_rec_name,
         DARSHAN_APXC_MOD,
         sizeof(struct darshan_apxc_perf_record),
         NULL);

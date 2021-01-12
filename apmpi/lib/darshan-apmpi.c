@@ -55,16 +55,14 @@ typedef long long ap_bytes_t;
         *(__bucket_base_p) += 1; \
     else if(__value < 1025) \
         *(__bucket_base_p + 1) += 1; \
-    else if(__value < 32769) \
+    else if(__value < 8193) \
         *(__bucket_base_p + 2) += 1; \
     else if(__value < 262145) \
         *(__bucket_base_p + 3) += 1; \
     else if(__value < 1048577) \
         *(__bucket_base_p + 4) += 1; \
-    else if(__value < 4194305) \
-        *(__bucket_base_p + 5) += 1; \
     else \
-        *(__bucket_base_p + 6) += 1; \
+        *(__bucket_base_p + 5) += 1; \
 } while(0)
 
 
@@ -235,8 +233,9 @@ void apmpi_runtime_initialize()
         return;
     }
     memset(apmpi_runtime, 0, sizeof(*apmpi_runtime));
-    sprintf(rec_name, "darshan-apmpi-%d", my_rank);
-    apmpi_runtime->rec_id = darshan_core_gen_record_id(rec_name);
+    //sprintf(rec_name, "darshan-apmpi-%d", my_rank);
+    //apmpi_runtime->rec_id = darshan_core_gen_record_id(rec_name);
+    apmpi_runtime->rec_id = darshan_core_gen_record_id("APMPI"); //record name
 
     apmpi_runtime->perf_record = darshan_core_register_record(
         apmpi_runtime->rec_id,
