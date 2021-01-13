@@ -4,13 +4,13 @@
  *
  */
 
-#ifndef __DARSHAN_APMPI_LOG_FORMAT_H
-#define __DARSHAN_APMPI_LOG_FORMAT_H
+#ifndef __APMPI_LOG_FORMAT_H
+#define __APMPI_LOG_FORMAT_H
 
 /* current AutoPerf MPI log format version */
-#define DARSHAN_APMPI_VER 1
+#define APMPI_VER 1
 
-#define DARSHAN_APMPI_MAGIC ('A'*0x100000000+\
+#define APMPI_MAGIC ('A'*0x100000000+\
                             'P'*0x1000000+\
                             'M'*0x10000+\
                             'P'*0x100+\
@@ -101,4 +101,4 @@ struct darshan_apmpi_perf_record
 };
 
 
-#endif /* __DARSHAN_APMPI_LOG_FORMAT_H */
+#endif /* __APMPI_LOG_FORMAT_H */

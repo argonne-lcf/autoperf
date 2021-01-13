@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef __DARSHAN_APXC_LOG_UTILS_H
-#define __DARSHAN_APXC_LOG_UTILS_H
+#ifndef __APXC_LOG_UTILS_H
+#define __APXC_LOG_UTILS_H
 
 extern char *apxc_counter_names[];
 

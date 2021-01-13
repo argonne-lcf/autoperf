@@ -59,7 +59,7 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
     int i;
     int ret = -1;
 
-    if(fd->mod_map[DARSHAN_APMPI_MOD].len == 0)
+    if(fd->mod_map[APMPI_MOD].len == 0)
         return(0);
 
     if (!*buf_p)
@@ -76,25 +76,25 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
         buffer = *buf_p;
     }
 
-    if (fd->mod_ver[DARSHAN_APMPI_MOD] == 0)
+    if (fd->mod_ver[APMPI_MOD] == 0)
     {
         printf("Either unknown or debug version: %d\n",
-               fd->mod_ver[DARSHAN_APMPI_MOD]);
+               fd->mod_ver[APMPI_MOD]);
         return(0);
     }
 
-    if ((fd->mod_ver[DARSHAN_APMPI_MOD] > 0) &&
-        (fd->mod_ver[DARSHAN_APMPI_MOD] < DARSHAN_APMPI_VER))
+    if ((fd->mod_ver[APMPI_MOD] > 0) &&
+        (fd->mod_ver[APMPI_MOD] < APMPI_VER))
     {
         /* perform conversion as needed */
     }
 
     /* v1, current version */
-    if (fd->mod_ver[DARSHAN_APMPI_MOD] == DARSHAN_APMPI_VER)
+    if (fd->mod_ver[APMPI_MOD] == APMPI_VER)
     {
             rec_len = sizeof(struct darshan_apmpi_perf_record);
 
-        ret = darshan_log_get_mod(fd, DARSHAN_APMPI_MOD, buffer, rec_len);
+        ret = darshan_log_get_mod(fd, APMPI_MOD, buffer, rec_len);
     }
 
     if (ret == rec_len)
@@ -143,8 +143,8 @@ static int darshan_log_put_apmpi_rec(darshan_fd fd, void* buf)
 
     rec_len = sizeof(struct darshan_apmpi_perf_record);
     
-    ret = darshan_log_put_mod(fd, DARSHAN_APMPI_MOD, buf,
-                              rec_len, DARSHAN_APMPI_VER);
+    ret = darshan_log_put_mod(fd, APMPI_MOD, buf,
+                              rec_len, APMPI_VER);
     if(ret < 0)
         return(-1);
 
@@ -161,14 +161,14 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
         
         for(i = 0; i < APMPI_NUM_INDICES; i++)
         {
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 prf_rec->base_rec.rank, prf_rec->base_rec.id,
                 apmpi_counter_names[i], prf_rec->counters[i],
                 "", "", "");
         }
         for(i = 0; i < APMPI_F_NUM_INDICES; i++)
         {
-            DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
+            DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 prf_rec->base_rec.rank, prf_rec->base_rec.id,
                 apmpi_f_counter_names[i], prf_rec->fcounters[i],
                 "", "", "");

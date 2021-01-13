@@ -210,7 +210,7 @@ void apmpi_runtime_initialize()
 
     /* register the apmpi module with the darshan-core component */
     darshan_core_register_module(
-        DARSHAN_APMPI_MOD,
+        APMPI_MOD,
         mod_funcs,
         &apmpi_buf_size,
         &my_rank,
@@ -219,7 +219,7 @@ void apmpi_runtime_initialize()
     /* not enough memory to fit apmpi module record */
     if(apmpi_buf_size < sizeof(struct darshan_apmpi_perf_record))
     {
-        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
+        darshan_core_unregister_module(APMPI_MOD);
         APMPI_UNLOCK();
         return;
     }
@@ -228,7 +228,7 @@ void apmpi_runtime_initialize()
     apmpi_runtime = malloc(sizeof(*apmpi_runtime));
     if(!apmpi_runtime)
     {
-        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
+        darshan_core_unregister_module(APMPI_MOD);
         APMPI_UNLOCK();
         return;
     }
@@ -240,12 +240,12 @@ void apmpi_runtime_initialize()
     apmpi_runtime->perf_record = darshan_core_register_record(
         apmpi_runtime->rec_id,
         "APMPI",
-        DARSHAN_APMPI_MOD,
+        APMPI_MOD,
         sizeof(struct darshan_apmpi_perf_record),
         NULL);
     if(!(apmpi_runtime->perf_record))
     {
-        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
+        darshan_core_unregister_module(APMPI_MOD);
         free(apmpi_runtime);
         apmpi_runtime = NULL;
         APMPI_UNLOCK();

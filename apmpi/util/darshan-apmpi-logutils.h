@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef __DARSHAN_APMPI_LOG_UTILS_H
-#define __DARSHAN_APMPI_LOG_UTILS_H
+#ifndef __APMPI_LOG_UTILS_H
+#define __APMPI_LOG_UTILS_H
 
 extern char *apmpi_counter_names[];
 

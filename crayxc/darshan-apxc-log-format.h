@@ -4,13 +4,13 @@
  *
  */
 
-#ifndef __DARSHAN_APXC_LOG_FORMAT_H
-#define __DARSHAN_APXC_LOG_FORMAT_H
+#ifndef __APXC_LOG_FORMAT_H
+#define __APXC_LOG_FORMAT_H
 
 /* current AutoPerf Cray XC log format version */
-#define DARSHAN_APXC_VER 1
+#define APXC_VER 1
 
-#define DARSHAN_APXC_MAGIC ('A'*0x100000000000000+\
+#define APXC_MAGIC ('A'*0x100000000000000+\
                             'U'*0x1000000000000+\
                             'T'*0x10000000000+\
                             'O'*0x100000000+\
@@ -482,4 +482,4 @@ struct darshan_apxc_header_record
     uint64_t appid;
 };
 
-#endif /* __DARSHAN_APXC_LOG_FORMAT_H */
+#endif /* __APXC_LOG_FORMAT_H */

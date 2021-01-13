@@ -1,5 +1,5 @@
-#ifndef __DARSHAN_APMPI_UTILS_H__
-#define __DARSHAN_APMPI_UTILS_H__
+#ifndef __APMPI_UTILS_H__
+#define __APMPI_UTILS_H__
 
 #include <regex.h>
 

@@ -1,5 +1,5 @@
-#ifndef __DARSHAN_APXC_UTILS_H__
-#define __DARSHAN_APXC_UTILS_H__
+#ifndef __APXC_UTILS_H__
+#define __APXC_UTILS_H__
 
 #include <regex.h>
 
