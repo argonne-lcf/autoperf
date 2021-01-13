@@ -8,6 +8,7 @@
 #define __APMPI_LOG_UTILS_H
 
 extern char *apmpi_counter_names[];
+extern char *apmpi_fcounter_names[];
 
 extern struct darshan_mod_logutil_funcs apmpi_logutils;
 
