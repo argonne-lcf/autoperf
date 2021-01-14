@@ -14,7 +14,6 @@ def main():
   parser.add_argument('logname', metavar="logname", type=str, nargs=1, help='Logname to parse')
   args = parser.parse_args()
 
-  print(args)
   report = darshan.DarshanReport(args.logname[0], read_all=False)
   report.info()
 
