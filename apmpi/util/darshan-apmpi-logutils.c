@@ -23,16 +23,21 @@
 /* counter name strings for the MPI module */
 //#define X(a) #a,
 
-
-#define X(a) #a
-
+#define Y(a) #a, 
+#define Z(a) #a
+#define X I
 char *apmpi_counter_names[] = {
     APMPI_PERF_COUNTERS
 };
+#undef X
+#define X F
 char *apmpi_f_counter_names[] = {
     APMPI_PERF_F_COUNTERS
 };
+#undef Y
+#undef Z
 #undef X
+
 static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p);
 static int darshan_log_put_apmpi_rec(darshan_fd fd, void* buf);
 static void darshan_log_print_apmpi_rec(void *file_rec,

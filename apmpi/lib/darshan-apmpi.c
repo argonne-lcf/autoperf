@@ -196,7 +196,6 @@ void apmpi_runtime_initialize()
         };
 
     APMPI_LOCK();
-    
 
     /* don't do anything if already initialized */
     if(apmpi_runtime)
@@ -204,7 +203,6 @@ void apmpi_runtime_initialize()
         APMPI_UNLOCK();
         return;
     }
-
 
     apmpi_buf_size = sizeof(struct darshan_apmpi_perf_record);
 
@@ -251,7 +249,6 @@ void apmpi_runtime_initialize()
         APMPI_UNLOCK();
         return;
     }
-    capture(apmpi_runtime->perf_record, apmpi_runtime->rec_id);
 
     initialize_counters();
 
@@ -259,6 +256,90 @@ void apmpi_runtime_initialize()
 
     return;
 }
+#if 0
+static void apmpi_shared_record_variance(MPI_Comm mod_comm,
+    struct darshan_apmpi_perf_record *inrec_array, struct darshan_apmpi_perf_record *outrec_array,
+    int shared_rec_count)
+{
+    MPI_Datatype var_dt;
+    MPI_Op var_op;
+    int i;
+    struct darshan_variance_dt *var_send_buf = NULL;
+    struct darshan_variance_dt *var_recv_buf = NULL;
+
+    PMPI_Type_contiguous(sizeof(struct darshan_variance_dt),
+        MPI_BYTE, &var_dt);
+    PMPI_Type_commit(&var_dt);
+
+    PMPI_Op_create(darshan_variance_reduce, 1, &var_op);
+
+    var_send_buf = malloc(shared_rec_count * sizeof(struct darshan_variance_dt));
+    if(!var_send_buf)
+        return;
+
+    if(my_rank == 0)
+    {   
+        var_recv_buf = malloc(shared_rec_count * sizeof(struct darshan_variance_dt));
+
+        if(!var_recv_buf)
+            return;
+    }   
+
+    /* get total i/o time variances for shared records */
+
+    for(i=0; i<shared_rec_count; i++)
+    {   
+        var_send_buf[i].n = 1;
+        var_send_buf[i].S = 0;
+        var_send_buf[i].T = inrec_array[i].fcounters[MPIIO_F_READ_TIME] +
+                            inrec_array[i].fcounters[MPIIO_F_WRITE_TIME] +
+                            inrec_array[i].fcounters[MPIIO_F_META_TIME];
+    }   
+
+    PMPI_Reduce(var_send_buf, var_recv_buf, shared_rec_count,
+        var_dt, var_op, 0, mod_comm);
+
+    if(my_rank == 0)
+    {   
+        for(i=0; i<shared_rec_count; i++)
+        {   
+            outrec_array[i].fcounters[MPIIO_F_VARIANCE_RANK_TIME] =
+                (var_recv_buf[i].S / var_recv_buf[i].n);
+        }   
+    }   
+
+    /* get total bytes moved variances for shared records */
+
+    for(i=0; i<shared_rec_count; i++)
+    {   
+        var_send_buf[i].n = 1;
+        var_send_buf[i].S = 0;
+        var_send_buf[i].T = (double)
+                            inrec_array[i].counters[MPIIO_BYTES_READ] +
+                            inrec_array[i].counters[MPIIO_BYTES_WRITTEN];
+    }
+
+    PMPI_Reduce(var_send_buf, var_recv_buf, shared_rec_count,
+        var_dt, var_op, 0, mod_comm);
+
+    if(my_rank == 0)
+    {
+        for(i=0; i<shared_rec_count; i++)
+        {
+            outrec_array[i].fcounters[MPIIO_F_VARIANCE_RANK_BYTES] =
+                (var_recv_buf[i].S / var_recv_buf[i].n);
+        }
+    }
+    
+    PMPI_Type_free(&var_dt);
+    PMPI_Op_free(&var_op);
+    free(var_send_buf);
+    free(var_recv_buf);
+
+    return;
+}
+#endif
+
 
 /********************************************************************************
  * shutdown function exported by this module for coordinating with darshan-core *
@@ -273,6 +354,11 @@ static void apmpi_mpi_redux(
     int shared_rec_count)
 {
     int i;
+    struct darshan_apmpi_perf_record *red_send_buf = NULL;
+    struct darshan_apmpi_perf_record *red_recv_buf = NULL;
+    MPI_Datatype red_type;
+    MPI_Op red_op;
+
     APMPI_LOCK();
 
     if (!apmpi_runtime)
@@ -281,8 +367,8 @@ static void apmpi_mpi_redux(
         return;
     }
     /* collect perf counters */
-    //capture(apmpi_runtime->perf_record, apmpi_runtime->rec_id);
-
+    capture(apmpi_runtime->perf_record, apmpi_runtime->rec_id);
+    
     APMPI_UNLOCK();
 
     return;
