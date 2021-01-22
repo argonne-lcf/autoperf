@@ -179,7 +179,6 @@ void apxc_runtime_initialize()
         &my_rank,
         NULL);
 
-    printf("L 182 --- my_rank: %d apxc_buf_size:%d \n", my_rank, apxc_buf_size);
     /* not enough memory to fit crayxc module record */
     if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
     {
@@ -232,7 +231,6 @@ void apxc_runtime_initialize()
             apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade);
     //apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
     apxc_runtime->rtr_id = darshan_core_gen_record_id("APXC");
-    printf("L 234 --- my_rank: %d apxc_runtime->rtr_id:%lu rtr_rec_name: %s g: %d c: %d b: %d n: %d \n", my_rank, apxc_runtime->rtr_id, rtr_rec_name, apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade, apxc_runtime->node);
     apxc_runtime->perf_record = darshan_core_register_record(
         apxc_runtime->rtr_id,
         //NULL,
@@ -283,7 +281,6 @@ static void apxc_mpi_redux(
     MPI_Comm router_comm;
 
     APXC_LOCK();
-    printf("-------- ****** -------- Inside apxc_mpi_redux\n");
     if (!apxc_runtime)
     {
         APXC_UNLOCK();

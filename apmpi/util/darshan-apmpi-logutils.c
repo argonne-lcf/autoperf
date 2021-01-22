@@ -27,16 +27,24 @@
 #define Z(a) #a
 #define X I
 char *apmpi_counter_names[] = {
-    APMPI_PERF_COUNTERS
+    APMPI_MPIOP_COUNTERS
 };
 #undef X
-#define X F
-char *apmpi_f_counter_names[] = {
-    APMPI_PERF_F_COUNTERS
+#define X F_P2P
+char *apmpi_f_mpiop_totaltime_counter_names[] = {
+    APMPI_F_MPIOP_TOTALTIME_COUNTERS
+};
+#undef X
+#define X F_SYNC
+char *apmpi_f_mpiop_totalsync_counter_names[] = {
+    APMPI_F_MPIOP_SYNCTIME_COUNTERS
+};
+#undef X
+char *apmpi_f_mpi_global_counter_names[] = {
+    APMPI_F_MPI_GLOBAL_COUNTERS
 };
 #undef Y
 #undef Z
-#undef X
 
 static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p);
 static int darshan_log_put_apmpi_rec(darshan_fd fd, void* buf);
@@ -175,7 +183,21 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
         {
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 prf_rec->base_rec.rank, prf_rec->base_rec.id,
-                apmpi_f_counter_names[i], prf_rec->fcounters[i],
+                apmpi_f_mpiop_totaltime_counter_names[i], prf_rec->fcounters[i],
+                "", "", "");
+        }
+        for(i = 0; i < APMPI_F_SYNC_NUM_INDICES; i++)
+        {
+            DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                prf_rec->base_rec.rank, prf_rec->base_rec.id,
+                apmpi_f_mpiop_totalsync_counter_names[i], prf_rec->fsynccounters[i],
+                "", "", "");
+        }
+        for(i = 0; i < APMPI_F_GLOBAL_NUM_INDICES; i++)
+        {
+            DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                prf_rec->base_rec.rank, prf_rec->base_rec.id,
+                apmpi_f_mpi_global_counter_names[i], prf_rec->fglobalcounters[i],
                 "", "", "");
         }
 
