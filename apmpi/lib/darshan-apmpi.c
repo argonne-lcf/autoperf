@@ -27,6 +27,25 @@ typedef long long ap_bytes_t;
 #define MAX(x,y) ((x>y)?x:y)
 #define MIN(x,y) ((x<y)?x:y)
 
+#define TIME_SYNC(FUNC) \
+          double tm1, tm2, tm3, tdiff, tsync;\
+          int ret; \
+          tm1 = darshan_core_wtime(); \
+          ret = __real_PMPI_Barrier(comm); \
+          tm2 = darshan_core_wtime(); \
+          ret = FUNC; \
+          tm3 = darshan_core_wtime(); \
+          tdiff = tm3-tm2; \
+          tsync = tm2-tm1
+
+#define TIME(FUNC) \
+          double tm1, tm2, tdiff;\
+          int ret; \
+          tm1 = darshan_core_wtime(); \
+          ret = FUNC; \
+          tm2 = darshan_core_wtime(); \
+          tdiff = tm2-tm1
+
 #define BYTECOUNT(TYPE, COUNT) \
           int tsize; \
           PMPI_Type_size(TYPE, &tsize); \
@@ -42,17 +61,16 @@ typedef long long ap_bytes_t;
 /* increment histogram bucket depending on the given __value
  *
  * NOTE: This macro can be used to build a histogram of access
- * sizes, offsets, etc. It assumes a 8-bucket histogram, with
+ * sizes, offsets, etc. It assumes a 6-bucket histogram, with
  * __bucket_base_p pointing to the first counter in the sequence
  * of buckets (i.e., the smallest bucket). The size ranges of each
  * bucket are:
  *      * 0 - 256 bytes
  *      * 256 - 1 KiB
- *      * 1 KiB - 32 KiB
+ *      * 1 KiB - 8 KiB
  *      * 32 KiB - 256 KiB
  *      * 256 KiB - 1 MiB
- *      * 1 MiB - 4 MiB
- *      * 4 MiB +
+ *      * 1 MiB +
  */
 #define DARSHAN_MSG_BUCKET_INC(__bucket_base_p, __value) do {\
     if(__value < 257) \
@@ -77,17 +95,17 @@ DARSHAN_FORWARD_DECL(PMPI_Isend, int, (const void *buf, int count, MPI_Datatype 
 DARSHAN_FORWARD_DECL(PMPI_Irecv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request));
 #endif
 DARSHAN_FORWARD_DECL(PMPI_Barrier, int, (MPI_Comm comm));
-#if 0
 DARSHAN_FORWARD_DECL(PMPI_Bcast, int, (void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Reduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm));
-#endif
 DARSHAN_FORWARD_DECL(PMPI_Allreduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm));
-#if 0
 DARSHAN_FORWARD_DECL(PMPI_Alltoall, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Alltoallv, int, (const void *sendbuf, const int *sendcounts, const int *sdispls,
                  MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls,
                  MPI_Datatype recvtype, MPI_Comm comm));
+DARSHAN_FORWARD_DECL(PMPI_Alltoallw, int, (const void *sendbuf, const int sendcounts[], const int sdispls[],
+                 const MPI_Datatype sendtypes[], void *recvbuf, const int recvcounts[], const int rdispls[],
+                 const MPI_Datatype recvtypes[], MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Allgather, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                   void *recvbuf, int recvcount, MPI_Datatype recvtype,
                   MPI_Comm comm));
@@ -110,7 +128,6 @@ DARSHAN_FORWARD_DECL(PMPI_Scan, int, (const void *sendbuf, void *recvbuf, int co
              MPI_Op op, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Exscan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
                MPI_Op op, MPI_Comm comm));
-#endif
 //DARSHAN_FORWARD_DECL(PMPI_ , int, ());
 /*
  * <Description>
@@ -275,8 +292,6 @@ void apmpi_runtime_initialize()
         apmpi_runtime->header_record->appid = atoi((char*)getenv( csJOBID_ENV_STR ));
     }
 
-    //sprintf(rec_name, "darshan-apmpi-%d", my_rank);
-    //apmpi_runtime->rec_id = darshan_core_gen_record_id(rec_name);
     apmpi_runtime->rec_id = darshan_core_gen_record_id("APMPI"); //record name
 
     apmpi_runtime->perf_record = darshan_core_register_record(
@@ -488,6 +503,41 @@ static void apmpi_shutdown(
        APMPI_UNLOCK(); \
    } while(0)
 
+#define APMPI_RECORD_UPDATE(MPI_OP) do { \
+    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
+    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _TOTAL_BYTES)] += bytes; \
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[Y(MPI_OP ## _MSG_SIZE_AGG_0_256)]), bytes); \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    } while(0)
+
+#define APMPI_RECORD_UPDATE_NOMSG(MPI_OP) do { \
+    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    } while(0)
+
+#define APMPI_RECORD_UPDATE_SYNC(MPI_OP) do { \
+    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
+    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _TOTAL_BYTES)] += bytes; \
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[Y(MPI_OP ## _MSG_SIZE_AGG_0_256)]), bytes); \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
+    apmpi_runtime->perf_record->fsynccounters[Y(MPI_OP ## _TOTAL_SYNC_TIME)] += tsync; \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    } while(0)
+
+#define APMPI_RECORD_UPDATE_SYNC_NOMSG(MPI_OP) do { \
+    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
+    apmpi_runtime->perf_record->fsynccounters[Y(MPI_OP ## _TOTAL_SYNC_TIME)] += tsync; \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    } while(0)
+#define Y(a) a
+
 /**********************************************************
  *        Wrappers for MPI functions of interest       * 
  **********************************************************/
@@ -495,31 +545,15 @@ static void apmpi_shutdown(
 int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
              MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2, tdiff;
-    int size;
-
     MAP_OR_FAIL(PMPI_Send);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Send(buf, count, datatype, dest, tag, comm);
-    tm2 = darshan_core_wtime();
+    TIME(__real_PMPI_Send(buf, count, datatype, dest, tag, comm));
+
+    BYTECOUNT(datatype, count);
     APMPI_PRE_RECORD();
     // Lock around the count - lock only if MPI_THREAD_MULTIPLE is used ... locking mutex
-    apmpi_runtime->perf_record->counters[MPI_SEND_CALL_COUNT]++;
-    BYTECOUNT(datatype, count);
-    apmpi_runtime->perf_record->counters[MPI_SEND_TOTAL_BYTES] += bytes;
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_SEND_MSG_SIZE_AGG_0_256]), bytes);
-    tdiff = tm2-tm1;
-    apmpi_runtime->perf_record->fcounters[MPI_SEND_TOTAL_TIME] += tdiff;
-    apmpi_runtime->perf_record->fcounters[MPI_SEND_MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[MPI_SEND_MAX_TIME], tdiff);
-    apmpi_runtime->perf_record->fcounters[MPI_SEND_MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[MPI_SEND_MIN_TIME], tdiff);
-/*
-    Z.S = X->S + Y->S + (X->n/(Y->n*Z.n)) *
-           ((Y->n/X->n)*X->T - Y->T) * ((Y->n/X->n)*X->T - Y->T);
-
-    apmpi_runtime->perf_record->fcounters[] =
-  */  APMPI_POST_RECORD();
+    APMPI_RECORD_UPDATE(MPI_SEND);
+    APMPI_POST_RECORD();
     return ret;
 }
 DARSHAN_WRAPPER_MAP(PMPI_Send, int,  (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm), MPI_Send)
@@ -527,23 +561,13 @@ DARSHAN_WRAPPER_MAP(PMPI_Send, int,  (const void *buf, int count, MPI_Datatype d
 int DARSHAN_DECL(MPI_Recv)(void *buf, int count, MPI_Datatype datatype, int source, int tag,
              MPI_Comm comm, MPI_Status *status)
 {
-    int ret;
-    double tm1, tm2, tdiff;
-
     MAP_OR_FAIL(PMPI_Recv);
+    
+    TIME(__real_PMPI_Recv(buf, count, datatype, source, tag, comm, status));
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Recv(buf, count, datatype, source, tag, comm, status);
-    tm2 = darshan_core_wtime();
-    APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_RECV_CALL_COUNT]++;
     BYTECOUNT(datatype, count);
-    apmpi_runtime->perf_record->counters[MPI_RECV_TOTAL_BYTES] += bytes;
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_RECV_MSG_SIZE_AGG_0_256]), bytes);
-    tdiff = tm2-tm1;
-    apmpi_runtime->perf_record->fcounters[MPI_RECV_TOTAL_TIME] += tdiff;
-    apmpi_runtime->perf_record->fcounters[MPI_RECV_MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[MPI_RECV_MAX_TIME], tdiff);
-    apmpi_runtime->perf_record->fcounters[MPI_RECV_MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[MPI_RECV_MIN_TIME], tdiff);
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE(MPI_RECV);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -587,44 +611,32 @@ DARSHAN_WRAPPER_MAP(PMPI_Irecv, int,  (void *buf, int count, MPI_Datatype dataty
 
 #endif
 
+
 int DARSHAN_DECL(MPI_Barrier)(MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2, tm3, tdiff, tsync;
-    
-    MAP_OR_FAIL(PMPI_Barrier);
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Barrier(comm);
-    tm2 = darshan_core_wtime();
-    ret = __real_PMPI_Barrier(comm);
-    tm3 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Barrier(comm));
   
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_BARRIER_CALL_COUNT]++;
-    tdiff = tm3-tm2;
-    tsync = tm2-tm1;
-    apmpi_runtime->perf_record->fcounters[MPI_BARRIER_TOTAL_TIME] += tdiff;
-    apmpi_runtime->perf_record->fsynccounters[MPI_BARRIER_TOTAL_SYNC_TIME] += tsync;
-    apmpi_runtime->perf_record->fcounters[MPI_BARRIER_MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[MPI_BARRIER_MAX_TIME], tdiff);
-    apmpi_runtime->perf_record->fcounters[MPI_BARRIER_MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[MPI_BARRIER_MIN_TIME], tdiff);
+    APMPI_RECORD_UPDATE_SYNC_NOMSG(MPI_BARRIER);
     APMPI_POST_RECORD();
 
     return ret;
 }
 DARSHAN_WRAPPER_MAP(PMPI_Barrier, int,  (MPI_Comm comm), MPI_Barrier)
-#if 0
+
 int DARSHAN_DECL(MPI_Bcast)(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-    
     MAP_OR_FAIL(PMPI_Bcast);
-  
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Bcast(buffer, count, datatype, root, comm);
-    tm2 = darshan_core_wtime();
+    
+    TIME_SYNC(__real_PMPI_Bcast(buffer, count, datatype, root, comm));
+
+    ap_bytes_t bytes = 0;
+    if (root != MPI_PROC_NULL) {
+        BYTECOUNTND(datatype, count);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_BCAST_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_BCAST);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -633,67 +645,54 @@ DARSHAN_WRAPPER_MAP(PMPI_Bcast, int, (void *buffer, int count, MPI_Datatype data
 int DARSHAN_DECL(MPI_Reduce)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root,
              MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-    
     MAP_OR_FAIL(PMPI_Reduce);
   
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm));
+
+    ap_bytes_t bytes = 0;
+    if (root != MPI_PROC_NULL) {
+        BYTECOUNTND(datatype, count);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_REDUCE_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_REDUCE);
     APMPI_POST_RECORD();
     return ret;
 }
 DARSHAN_WRAPPER_MAP(PMPI_Reduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm), MPI_Reduce)
-#endif
+
 int DARSHAN_DECL(MPI_Allreduce)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
              MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2, tm3, tdiff, tsync;
-    
     MAP_OR_FAIL(PMPI_Allreduce);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Barrier(comm);
-    tm2 = darshan_core_wtime();
-    ret = __real_PMPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
-    tm3 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm));
+
+    BYTECOUNT(datatype, count);
 
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_CALL_COUNT]++;
-    BYTECOUNT(datatype, count);
-    apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_TOTAL_BYTES] += bytes;
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_ALLREDUCE_MSG_SIZE_AGG_0_256]), bytes);
-    tdiff = tm3-tm2;
-    tsync = tm2-tm1;
-    apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_TOTAL_TIME] += tdiff;
-    apmpi_runtime->perf_record->fsynccounters[MPI_ALLREDUCE_TOTAL_SYNC_TIME] += tsync;
-    apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_MAX_TIME], tdiff);
-    apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[MPI_ALLREDUCE_MIN_TIME], tdiff);
+    APMPI_RECORD_UPDATE_SYNC(MPI_ALLREDUCE);
     APMPI_POST_RECORD();
 
     return ret;
 }
 DARSHAN_WRAPPER_MAP(PMPI_Allreduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm), MPI_Allreduce)
 
-#if 0
 int DARSHAN_DECL(MPI_Alltoall)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
                  MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-    
     MAP_OR_FAIL(PMPI_Alltoall);
   
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm));
+
+    BYTECOUNT(recvtype, recvcount);
+    int tasks;
+    PMPI_Comm_size(comm, &tasks);
+    bytes = bytes*tasks;
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_ALLTOALL_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_ALLTOALL);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -705,16 +704,19 @@ int DARSHAN_DECL(MPI_Alltoallv)(const void *sendbuf, const int *sendcounts, cons
                 MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls,
                 MPI_Datatype recvtype, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-    
     MAP_OR_FAIL(PMPI_Alltoallv);
   
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, comm));
+
+    int tsize;
+    PMPI_Type_size(recvtype, &tsize);
+    int i, tasks, count = 0;
+    PMPI_Comm_size(comm, &tasks);
+    for (i=0; i<tasks; i++) count += recvcounts[i];
+    ap_bytes_t bytes = (ap_bytes_t) (count * tsize);
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_ALLTOALLV_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_ALLTOALLV);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -722,38 +724,50 @@ DARSHAN_WRAPPER_MAP(PMPI_Alltoallv, int, (const void *sendbuf, const int *sendco
                  MPI_Datatype sendtype, void *recvbuf, const int *recvcounts, const int *rdispls,
                  MPI_Datatype recvtype, MPI_Comm comm), MPI_Alltoallv)
 
-int DARSHAN_DECL(MPI_Allgatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
-                   void *recvbuf, const int *recvcounts, const int *displs,
-                   MPI_Datatype recvtype, MPI_Comm comm)
+int DARSHAN_DECL(MPI_Alltoallw)(const void *sendbuf, const int sendcounts[], const int sdispls[],
+                const MPI_Datatype sendtypes[], void *recvbuf, const int recvcounts[], const int rdispls[],
+                const MPI_Datatype recvtypes[], MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
+    MAP_OR_FAIL(PMPI_Alltoallw);
+  
+    TIME_SYNC(__real_PMPI_Alltoallw(sendbuf, sendcounts, sdispls, sendtypes, recvbuf, recvcounts, rdispls, recvtypes, comm));
 
-    MAP_OR_FAIL(PMPI_Allgatherv);
+    ap_bytes_t bytes = 0;
+    int i, tasks, tsize;
+    PMPI_Comm_size(comm, &tasks);
+    for (i=0; i<tasks; i++) {
+      PMPI_Type_size(recvtypes[i], &tsize);
+      bytes += recvcounts[i]*tsize;
+     }
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
-    tm2 = darshan_core_wtime();
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_ALLGATHERV_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_ALLTOALLW);
     APMPI_POST_RECORD();
     return ret;
 }
+DARSHAN_WRAPPER_MAP(PMPI_Alltoallw, int, (const void *sendbuf, const int sendcounts[], const int sdispls[],
+                 const MPI_Datatype sendtypes[], void *recvbuf, const int recvcounts[], const int rdispls[],
+                 const MPI_Datatype recvtypes[], MPI_Comm comm), MPI_Alltoallw)
+
 
 int DARSHAN_DECL(MPI_Allgather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                   void *recvbuf, int recvcount, MPI_Datatype recvtype,
                   MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Allgather);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm));
+    
+    ap_bytes_t bytes;
+    if (sendbuf != MPI_IN_PLACE) {
+        BYTECOUNTND(sendtype, sendcount);
+    } 
+    else {
+        BYTECOUNTND(recvtype, recvcount);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_ALLGATHER_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_ALLGATHER);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -761,6 +775,29 @@ DARSHAN_WRAPPER_MAP(PMPI_Allgather, int, (const void *sendbuf, int sendcount, MP
                   void *recvbuf, int recvcount, MPI_Datatype recvtype,
                   MPI_Comm comm), MPI_Allgather)
 
+int DARSHAN_DECL(MPI_Allgatherv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                   void *recvbuf, const int *recvcounts, const int *displs,
+                   MPI_Datatype recvtype, MPI_Comm comm)
+{
+    MAP_OR_FAIL(PMPI_Allgatherv);
+
+    TIME_SYNC(__real_PMPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm));
+    
+    ap_bytes_t bytes;
+    if (sendbuf != MPI_IN_PLACE) {
+         BYTECOUNTND(sendtype, sendcount);
+    }
+    else {
+        int rank;
+        PMPI_Comm_rank(comm, &rank);
+        BYTECOUNTND(recvtype, recvcounts[rank]);
+    }
+
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_SYNC(MPI_ALLGATHERV);
+    APMPI_POST_RECORD();
+    return ret;
+}
 DARSHAN_WRAPPER_MAP(PMPI_Allgatherv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                    void *recvbuf, const int *recvcounts, const int *displs,
                    MPI_Datatype recvtype, MPI_Comm comm), MPI_Allgatherv)
@@ -768,16 +805,26 @@ DARSHAN_WRAPPER_MAP(PMPI_Allgatherv, int, (const void *sendbuf, int sendcount, M
 int DARSHAN_DECL(MPI_Gather)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Gather);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm));
+    
+    ap_bytes_t bytes = 0;
+    if (root == MPI_PROC_NULL) {
+        bytes = 0;
+    } 
+    else if (root == MPI_ROOT) {
+        BYTECOUNTND(recvtype, recvcount);
+    } 
+    else if (sendbuf == MPI_IN_PLACE) {
+        BYTECOUNTND(recvtype, recvcount);
+    } 
+    else {
+        BYTECOUNTND(sendtype, sendcount);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_GATHER_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_GATHER);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -788,16 +835,26 @@ int DARSHAN_DECL(MPI_Gatherv)(const void *sendbuf, int sendcount, MPI_Datatype s
                 void *recvbuf, const int *recvcounts, const int *displs,
                 MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Gatherv);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, root, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, root, comm));
+    
+    ap_bytes_t bytes = 0;
+    if (root == MPI_PROC_NULL) {
+        bytes = 0;
+    } 
+    else if (root == MPI_ROOT) {
+        bytes = 0;
+    } 
+    else if (sendbuf == MPI_IN_PLACE) {
+        BYTECOUNTND(recvtype, recvcounts[root]);
+    } 
+    else {
+        BYTECOUNTND(sendtype, sendcount);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_GATHERV_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_GATHERV);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -809,16 +866,26 @@ int DARSHAN_DECL(MPI_Scatter)(const void *sendbuf, int sendcount, MPI_Datatype s
                void *recvbuf, int recvcount, MPI_Datatype recvtype, int root,
                MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Scatter);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Scatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, comm));
+    
+    ap_bytes_t bytes;
+     if (root == MPI_PROC_NULL) {
+        bytes = 0;
+    } 
+    else if (root == MPI_ROOT) {
+        BYTECOUNTND(recvtype, recvcount);
+    }
+    else if (recvbuf == MPI_IN_PLACE) {
+        BYTECOUNTND(sendtype, sendcount);
+    }
+    else {
+        BYTECOUNTND(recvtype, recvcount);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_SCATTER_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_SCATTER);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -831,16 +898,25 @@ int DARSHAN_DECL(MPI_Scatterv)(const void *sendbuf, const int *sendcounts, const
                  MPI_Datatype recvtype,
                  int root, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Scatterv);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Scatterv(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Scatterv(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm));
+    
+    ap_bytes_t bytes;
+    if (root == MPI_PROC_NULL) {
+        bytes = 0;
+    }
+    else if (root == MPI_ROOT) {
+        bytes = 0;
+    } 
+    else if (recvbuf == MPI_IN_PLACE) {
+        BYTECOUNTND(sendtype, sendcounts[root]);
+    } else {
+        BYTECOUNTND(recvtype, recvcount);
+    }
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_SCATTERV_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_SCATTERV);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -852,17 +928,20 @@ DARSHAN_WRAPPER_MAP(PMPI_Scatterv, int, (const void *sendbuf, const int *sendcou
 int DARSHAN_DECL(MPI_Reduce_scatter)(const void *sendbuf, void *recvbuf, const int recvcounts[],
                        MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Reduce_scatter);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Reduce_scatter(sendbuf, recvbuf, recvcounts,
-                       datatype, op, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Reduce_scatter(sendbuf, recvbuf, recvcounts,
+                       datatype, op, comm));
+    int tsize;
+    PMPI_Type_size(datatype, &tsize);
+
+    int i, tasks, num = 0;
+    PMPI_Comm_size(comm, &tasks);
+    for (i=0; i<tasks; i++) num += recvcounts[i];
+    ap_bytes_t bytes = num * tsize;
+
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_REDUCE_SCATTER_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_REDUCE_SCATTER);
     APMPI_POST_RECORD();
     return ret;
 }
@@ -872,40 +951,34 @@ DARSHAN_WRAPPER_MAP(PMPI_Reduce_scatter, int, (const void *sendbuf, void *recvbu
 int DARSHAN_DECL(MPI_Scan)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
              MPI_Op op, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Scan);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Scan(sendbuf, recvbuf, count, datatype, op, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Scan(sendbuf, recvbuf, count, datatype, op, comm));
+    
+    BYTECOUNT(datatype, count);
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_SCAN_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_SCAN);
     APMPI_POST_RECORD();
     return ret;
 }
 DARSHAN_WRAPPER_MAP(PMPI_Scan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
              MPI_Op op, MPI_Comm comm), MPI_Scan )
+
 int DARSHAN_DECL(MPI_Exscan)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
                MPI_Op op, MPI_Comm comm)
 {
-    int ret;
-    double tm1, tm2;
-
     MAP_OR_FAIL(PMPI_Exscan);
 
-    tm1 = darshan_core_wtime();
-    ret = __real_PMPI_Exscan(sendbuf, recvbuf, count, datatype, op, comm);
-    tm2 = darshan_core_wtime();
+    TIME_SYNC(__real_PMPI_Exscan(sendbuf, recvbuf, count, datatype, op, comm));
+
+    BYTECOUNT(datatype, count);
     APMPI_PRE_RECORD();
-    apmpi_runtime->perf_record->counters[MPI_EXSCAN_COUNT]++;
+    APMPI_RECORD_UPDATE_SYNC(MPI_EXSCAN);
     APMPI_POST_RECORD();
     return ret;
 }
 DARSHAN_WRAPPER_MAP(PMPI_Exscan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
                MPI_Op op, MPI_Comm comm), MPI_Exscan)
-#endif
 /*
 int DARSHAN_DECL(MPI_ )()
 {
@@ -925,6 +998,7 @@ int DARSHAN_DECL(MPI_ )()
 DARSHAN_WRAPPER_MAP(PMPI_ , int, (), MPI_ )
 */
 
+#undef Y
 
 /*
  * Local variables:

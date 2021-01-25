@@ -47,20 +47,20 @@
 
 #define APMPI_MPI_BLOCKING_COLL \
         X(MPI_BCAST) \
-      /* X(MPI_GATHER)   \
+       X(MPI_GATHER)   \
         X(MPI_GATHERV)  \
         X(MPI_SCATTER)  \
         X(MPI_SCATTERV) \
         X(MPI_SCAN)     \
+        X(MPI_EXSCAN)     \
         X(MPI_ALLGATHER)        \
         X(MPI_ALLGATHERV)       \
         X(MPI_REDUCE)   \
-       */ X(MPI_ALLREDUCE)  /*      \
+        X(MPI_ALLREDUCE)        \
         X(MPI_REDUCE_SCATTER)   \
-        X(MPI_ALLTOALL)         \
+         X(MPI_ALLTOALL)         \
         X(MPI_ALLTOALLV)        \
-        X(MPI_ALLTOALLW)        \
-        X(MPI_EXSCAN)     \
+        X(MPI_ALLTOALLW)   /*    \
         Y(MPI_BLOCKING_COLL_CNT) */
 /*
 #define APMPI_MPI_ONESIDED \
