@@ -42,10 +42,12 @@
 #define AMPI_MPI_P2P_MISC \
         X(MPI_PROBE) \
 */
+#define APMPI_MPI_COLL_SYNC \
+        V(MPI_BARRIER) 
+
 #define APMPI_MPI_BLOCKING_COLL \
-        X(MPI_BARRIER) \
-      /*  X(MPI_BCAST) \
-        X(MPI_GATHER)   \
+        X(MPI_BCAST) \
+      /* X(MPI_GATHER)   \
         X(MPI_GATHERV)  \
         X(MPI_SCATTER)  \
         X(MPI_SCATTERV) \
@@ -75,21 +77,27 @@
          Y(a ## _MSG_SIZE_AGG_256K_1M) \
          Y(a ## _MSG_SIZE_AGG_1M_PLUS) \
 
+#define J(a) \
+         Y(a ## _CALL_COUNT) \
+
 #define APMPI_MPIOP_COUNTERS \
         APMPI_MPI_BLOCKING_P2P \
         /*APMPI_MPI_NONBLOCKING_P2P */\
+	APMPI_MPI_COLL_SYNC \
         APMPI_MPI_BLOCKING_COLL \
         Z(APMPI_NUM_INDICES)
 
 #define Y(a) a,
 #define Z(a) a
 #define X I
+#define V J
 /* integer counters for the "APMPI" module */
 enum apmpi_mpiop_indices
 {
     APMPI_MPIOP_COUNTERS
 };
 #undef X
+#undef V
 
 	/* per MPI op total times across the calls */
 #define F_P2P(a) \
@@ -100,35 +108,39 @@ enum apmpi_mpiop_indices
 #define APMPI_F_MPIOP_TOTALTIME_COUNTERS \
         APMPI_MPI_BLOCKING_P2P  /*
         APMPI_MPI_NONBLOCKING_P2P */ \
+	APMPI_MPI_COLL_SYNC \
         APMPI_MPI_BLOCKING_COLL \
         Z(APMPI_F_NUM_INDICES) 
 
 /* float counters for the "APMPI" module */
 #define X F_P2P
+#define V F_P2P
 enum apmpi_f_mpiop_totaltime_indices
 {
     APMPI_F_MPIOP_TOTALTIME_COUNTERS
 };
 #undef X
+#undef V
 
 #define F_SYNC(a) \
         Y(a ## _TOTAL_SYNC_TIME) 
 #define APMPI_F_MPIOP_SYNCTIME_COUNTERS \
+	APMPI_MPI_COLL_SYNC \
 	APMPI_MPI_BLOCKING_COLL \
         Z(APMPI_F_SYNC_NUM_INDICES) 
 /* float counters for the "APMPI" module */
 #define X F_SYNC
+#define V F_SYNC
 enum apmpi_f_mpiop_totalsync_indices
 {
     APMPI_F_MPIOP_SYNCTIME_COUNTERS
 };
 #undef X
+#undef V
 
         /* aggregate (across all the ranks) per MPI op times  */ 
 #define APMPI_F_MPI_GLOBAL_COUNTERS \
-        Y(APMPI_F_TOTAL_MPITIME)\
-        Y(APMPI_F_VARIANCE_TOTAL_MPITIME) \
-	/* this counter should go into header record on Rank 0 */ \
+	Y(RANK_TOTAL_MPITIME) \
 	Z(APMPI_F_GLOBAL_NUM_INDICES)
 enum apmpi_f_mpi_global_indices
 {
@@ -151,6 +163,13 @@ struct darshan_apmpi_perf_record
     double fcounters[APMPI_F_NUM_INDICES];
     double fsynccounters[APMPI_F_SYNC_NUM_INDICES];
     double fglobalcounters[APMPI_F_GLOBAL_NUM_INDICES];
+};
+struct darshan_apmpi_header_record
+{
+    struct darshan_base_record base_rec;
+    int64_t magic;
+    double apmpi_f_variance_total_mpitime;
+    uint64_t appid;
 };
 
 

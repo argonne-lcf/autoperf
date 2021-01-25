@@ -125,7 +125,9 @@ DARSHAN_FORWARD_DECL(PMPI_Exscan, int, (const void *sendbuf, void *recvbuf, int 
 struct apmpi_runtime
 {
     struct darshan_apmpi_perf_record *perf_record;
+    struct darshan_apmpi_header_record *header_record;
     darshan_record_id rec_id;
+    darshan_record_id header_id;
 };
 
 static struct apmpi_runtime *apmpi_runtime = NULL;
@@ -218,7 +220,8 @@ void apmpi_runtime_initialize()
         return;
     }
 
-    apmpi_buf_size = sizeof(struct darshan_apmpi_perf_record);
+    apmpi_buf_size = sizeof(struct darshan_apmpi_header_record) +
+                     sizeof(struct darshan_apmpi_perf_record);
 
     /* register the apmpi module with the darshan-core component */
     darshan_core_register_module(
@@ -229,7 +232,7 @@ void apmpi_runtime_initialize()
         NULL);
 
     /* not enough memory to fit apmpi module record */
-    if(apmpi_buf_size < sizeof(struct darshan_apmpi_perf_record))
+    if(apmpi_buf_size < sizeof(struct darshan_apmpi_header_record) + sizeof(struct darshan_apmpi_perf_record))
     {
         darshan_core_unregister_module(APMPI_MOD);
         APMPI_UNLOCK();
@@ -245,6 +248,33 @@ void apmpi_runtime_initialize()
         return;
     }
     memset(apmpi_runtime, 0, sizeof(*apmpi_runtime));
+
+    if (my_rank == 0)
+    {   
+        apmpi_runtime->header_id = darshan_core_gen_record_id("darshan-apmpi-header");
+        
+        /* register the apmpi record with darshan-core */
+        apmpi_runtime->header_record = darshan_core_register_record(
+            apmpi_runtime->header_id,
+            //NULL,
+            "darshan-apmpi-header",
+            APMPI_MOD,
+            sizeof(struct darshan_apmpi_header_record),
+            NULL);
+        if(!(apmpi_runtime->header_record))
+        {   
+            darshan_core_unregister_module(APMPI_MOD);
+            free(apmpi_runtime);
+            apmpi_runtime = NULL;
+            APMPI_UNLOCK();
+           return;
+        }
+        apmpi_runtime->header_record->base_rec.id = apmpi_runtime->header_id;
+        apmpi_runtime->header_record->base_rec.rank = my_rank;
+        apmpi_runtime->header_record->magic = APMPI_MAGIC;
+        apmpi_runtime->header_record->appid = atoi((char*)getenv( csJOBID_ENV_STR ));
+    }
+
     //sprintf(rec_name, "darshan-apmpi-%d", my_rank);
     //apmpi_runtime->rec_id = darshan_core_gen_record_id(rec_name);
     apmpi_runtime->rec_id = darshan_core_gen_record_id("APMPI"); //record name
@@ -290,8 +320,7 @@ static void apmpi_record_reduction_op (void* inrec_v, void* inoutrec_v,
 }
 #endif
 #if 1
-static void apmpi_shared_record_variance(MPI_Comm mod_comm,
-    struct darshan_apmpi_perf_record *inrec, struct darshan_apmpi_perf_record *outrec)
+static void apmpi_shared_record_variance(MPI_Comm mod_comm)
 {
     MPI_Datatype var_dt;
     MPI_Op var_op;
@@ -320,15 +349,14 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm,
     /* get total i/o time variances for shared records */
     var_send_buf->n = 1;
     var_send_buf->S = 0;
-    var_send_buf->T = inrec->fglobalcounters[APMPI_F_TOTAL_MPITIME];
+    var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME];
 
     PMPI_Reduce(var_send_buf, var_recv_buf, 1,
         var_dt, var_op, 0, mod_comm);
 
     if(my_rank == 0)
     {   
-       memcpy(outrec, inrec, sizeof(struct darshan_apmpi_perf_record));
-       outrec->fglobalcounters[APMPI_F_VARIANCE_TOTAL_MPITIME] =
+       apmpi_runtime->header_record->apmpi_f_variance_total_mpitime =
                 (var_recv_buf->S / var_recv_buf->n);
     }   
 
@@ -355,9 +383,11 @@ static void apmpi_mpi_redux(
     int shared_rec_count)
 {
     int i;
+#if 0
     struct darshan_apmpi_perf_record *red_send_buf = NULL;
     struct darshan_apmpi_perf_record *red_recv_buf = NULL;
     struct darshan_apmpi_perf_record *apmpi_rec_buf = (struct darshan_apmpi_perf_record *)apmpi_buf;
+#endif
     MPI_Datatype red_type;
     //MPI_Op red_op;
 
@@ -369,15 +399,16 @@ static void apmpi_mpi_redux(
         return;
     }
 
-    /* Compute Total MPI time per rank: APMPI_F_TOTAL_MPITIME */
+    /* Compute Total MPI time per rank: RANK_TOTAL_MPITIME */
     for (i=MPI_SEND_TOTAL_TIME; i<APMPI_F_NUM_INDICES; i+=3){
-        apmpi_rec_buf->fglobalcounters[APMPI_F_TOTAL_MPITIME] += apmpi_rec_buf->fcounters[i];
+        apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += apmpi_runtime->perf_record->fcounters[i];
     }
     for (i=MPI_BARRIER_TOTAL_SYNC_TIME; i<APMPI_F_SYNC_NUM_INDICES; i++){
-        apmpi_rec_buf->fglobalcounters[APMPI_F_TOTAL_MPITIME] += apmpi_rec_buf->fsynccounters[i];
+        apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += apmpi_runtime->perf_record->fsynccounters[i];
     }
     
-    red_send_buf = apmpi_rec_buf;
+#if 0
+    red_send_buf = apmpi_runtime->perf_record;
 
     if (my_rank == 0){
         red_recv_buf = malloc(sizeof(struct darshan_apmpi_perf_record));
@@ -390,7 +421,6 @@ static void apmpi_mpi_redux(
     /* construct a datatype for a APMPI file record.  This is serving no purpose
      * except to make sure we can do a reduction on proper boundaries
      */
-#if 0
     PMPI_Type_contiguous(sizeof(struct darshan_apmpi_perf_record),
         MPI_BYTE, &red_type);
     PMPI_Type_commit(&red_type);
@@ -403,16 +433,14 @@ static void apmpi_mpi_redux(
         shared_rec_count, red_type, red_op, 0, mod_comm);
 #endif
     /* get the time variance across all ranks */
-     apmpi_shared_record_variance(mod_comm, red_send_buf, red_recv_buf);
-    
+     apmpi_shared_record_variance(mod_comm);
+#if 0
     /* clean up reduction state */
     if(my_rank == 0)
     {   
-        memcpy(apmpi_rec_buf, red_recv_buf,
-            sizeof(struct darshan_apmpi_perf_record));
         free(red_recv_buf);
     }   
-    
+#endif    
     //PMPI_Type_free(&red_type);
     //PMPI_Op_free(&red_op);
 
@@ -430,7 +458,12 @@ static void apmpi_shutdown(
 
     APMPI_LOCK();
     assert(apmpi_runtime);
-    *apmpi_buf_sz = sizeof( *apmpi_runtime->perf_record);
+    *apmpi_buf_sz = 0;
+    if(my_rank == 0) {
+    *apmpi_buf_sz += sizeof( *apmpi_runtime->header_record);
+    }
+    *apmpi_buf_sz += sizeof( *apmpi_runtime->perf_record);
+
     finalize_counters();
     free(apmpi_runtime);
     apmpi_runtime = NULL;
