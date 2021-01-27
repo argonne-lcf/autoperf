@@ -19,3 +19,5 @@ lib/darshan-apmpi.o: lib/darshan-apmpi.c lib/darshan-apmpi-utils.h darshan.h dar
 lib/darshan-apmpi.po: lib/darshan-apmpi.c lib/darshan-apmpi-utils.h darshan.h darshan-dynamic.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apmpi-log-format.h | lib
 	$(CC) $(CFLAGS_SHARED) -c $< -o $@
 
+print-apmpi-size: print-apmpi-size.c $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/apmpi/darshan-apmpi-log-format.h
+	$(CC) $(CFLAGS) -g -O0 -o $@ $<
