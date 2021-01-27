@@ -135,6 +135,7 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
                 DARSHAN_BSWAP64(&(hdr_rec->apmpi_f_variance_total_mpitime));
+                DARSHAN_BSWAP64(&(hdr_rec->apmpi_f_variance_total_mpisynctime));
                 DARSHAN_BSWAP64(&(hdr_rec->appid));
             }
             else
@@ -217,6 +218,10 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpitime,
             "", "", "");
+        DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+            hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
+            "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpisynctime,
+            "", "", "");
         first_rec = 0;
     }
     else
@@ -293,6 +298,10 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
                 "", "", "");
+            DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
+                "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
+                "", "", "");
         }
         else if (!hdr_rec1)
         {
@@ -304,6 +313,10 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
+                "", "", "");
+            DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
+                "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
                 "", "", "");
         }
         else
@@ -331,6 +344,19 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                     hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                     "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
+                    "", "", "");
+            }
+            if (hdr_rec1->apmpi_f_variance_total_mpisynctime != hdr_rec2->apmpi_f_variance_total_mpisynctime)
+            {
+                printf("- ");
+                DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                    hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
+                    "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
+                    "", "", "");
+                printf("+ ");
+                DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                    hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
+                    "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
                     "", "", "");
             }
         }

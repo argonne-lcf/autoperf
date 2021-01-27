@@ -419,7 +419,7 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
             return;
     }   
 
-    /* get total i/o time variances for shared records */
+    /* get total mpi time variances across the ranks */
     var_send_buf->n = 1;
     var_send_buf->S = 0;
     var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME];
@@ -430,6 +430,19 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
     if(my_rank == 0)
     {   
        apmpi_runtime->header_record->apmpi_f_variance_total_mpitime =
+                (var_recv_buf->S / var_recv_buf->n);
+    }   
+    /* get total mpi sync time variances across the ranks */
+    var_send_buf->n = 1;
+    var_send_buf->S = 0;
+    var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPISYNCTIME];
+
+    PMPI_Reduce(var_send_buf, var_recv_buf, 1,
+        var_dt, var_op, 0, mod_comm);
+
+    if(my_rank == 0)
+    {   
+       apmpi_runtime->header_record->apmpi_f_variance_total_mpisynctime =
                 (var_recv_buf->S / var_recv_buf->n);
     }   
 
@@ -471,14 +484,16 @@ static void apmpi_mpi_redux(
         APMPI_UNLOCK();
         return;
     }
-
+    double mpisync_time = 0.0;
     /* Compute Total MPI time per rank: RANK_TOTAL_MPITIME */
     for (i=MPI_SEND_TOTAL_TIME; i<APMPI_F_NUM_INDICES; i+=3){
         apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += apmpi_runtime->perf_record->fcounters[i];
     }
     for (i=MPI_BARRIER_TOTAL_SYNC_TIME; i<APMPI_F_SYNC_NUM_INDICES; i++){
-        apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += apmpi_runtime->perf_record->fsynccounters[i];
+        mpisync_time += apmpi_runtime->perf_record->fsynccounters[i];
     }
+    apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += mpisync_time;
+    apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPISYNCTIME] = mpisync_time;
     
 #if 0
     red_send_buf = apmpi_runtime->perf_record;
