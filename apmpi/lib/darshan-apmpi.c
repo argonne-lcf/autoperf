@@ -26,7 +26,7 @@
 
 typedef long long ap_bytes_t;
 #define MAX(x,y) ((x>y)?x:y)
-#define MIN(x,y) ((x<y)?x:y)
+#define MIN(x,y) ((x==0.0)?y:((x<y)?x:y))
 
 #define TIME_SYNC(FUNC) \
           double tm1, tm2, tm3, tdiff, tsync;\
