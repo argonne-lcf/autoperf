@@ -32,8 +32,8 @@ char *apmpi_counter_names[] = {
 };
 #undef X
 #undef V
-#define X F_P2P
-#define V F_P2P
+#define X F_TIME
+#define V F_TIME
 char *apmpi_f_mpiop_totaltime_counter_names[] = {
     APMPI_F_MPIOP_TOTALTIME_COUNTERS
 };

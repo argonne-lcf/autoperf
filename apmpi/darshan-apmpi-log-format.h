@@ -54,6 +54,8 @@
 
 #define APMPI_MPI_COLL_SYNC \
         V(MPI_BARRIER) 
+#define APMPI_MPI_ICOLL_SYNC \
+        V(MPI_IBARRIER) 
 
 #define APMPI_MPI_BLOCKING_COLL \
         X(MPI_BCAST) \
@@ -72,13 +74,33 @@
         X(MPI_ALLTOALLV)        \
         X(MPI_ALLTOALLW)   /*    \
         Y(MPI_BLOCKING_COLL_CNT) */
-/*
+
+#define APMPI_MPI_NONBLOCKING_COLL \
+        X(MPI_IBCAST) \
+        X(MPI_IGATHER)   \
+        X(MPI_IGATHERV)  \
+        X(MPI_ISCATTER)  \
+        X(MPI_ISCATTERV) \
+        X(MPI_ISCAN)     \
+        X(MPI_IEXSCAN)     \
+        X(MPI_IALLGATHER)        \
+        X(MPI_IALLGATHERV)       \
+        X(MPI_IREDUCE)   \
+        X(MPI_IALLREDUCE)        \
+        X(MPI_IREDUCE_SCATTER)   \
+        X(MPI_IALLTOALL)         \
+        X(MPI_IALLTOALLV)        \
+        X(MPI_IALLTOALLW)   
+
 #define APMPI_MPI_ONESIDED \
 	X(MPI_PUT) \
 	X(MPI_GET) 
-*/
+
 #define I(a) \
          Y(a ## _CALL_COUNT) \
+      /* Y(MPIOP_BUF_SOURCE) \  0-CPU, 1-GPU (if we can determine if it is GPU buffer then we can repeat all the counters in this record 
+				for GPU buffer based calls? 
+				For an MPIOP, some of its call can use CPU buffers and some can be using GPU buffers ... */ \
          Y(a ## _TOTAL_BYTES) \
          Y(a ## _MSG_SIZE_AGG_0_256) \
          Y(a ## _MSG_SIZE_AGG_256_1K) \
@@ -95,7 +117,10 @@
         APMPI_MPI_NONBLOCKING_P2P \
 	AMPI_MPI_P2P_MISC \
 	APMPI_MPI_COLL_SYNC \
+	APMPI_MPI_ICOLL_SYNC \
         APMPI_MPI_BLOCKING_COLL \
+        APMPI_MPI_NONBLOCKING_COLL \
+	APMPI_MPI_ONESIDED \
         Z(APMPI_NUM_INDICES)
 
 #define Y(a) a,
@@ -111,7 +136,7 @@ enum apmpi_mpiop_indices
 #undef V
 
 	/* per MPI op total times across the calls */
-#define F_P2P(a) \
+#define F_TIME(a) \
         Y(a ## _TOTAL_TIME) \
         Y(a ## _MIN_TIME) \
         Y(a ## _MAX_TIME) 
@@ -121,12 +146,15 @@ enum apmpi_mpiop_indices
         APMPI_MPI_NONBLOCKING_P2P  \
 	AMPI_MPI_P2P_MISC \
 	APMPI_MPI_COLL_SYNC \
+	APMPI_MPI_ICOLL_SYNC \
         APMPI_MPI_BLOCKING_COLL \
+        APMPI_MPI_NONBLOCKING_COLL \
+	APMPI_MPI_ONESIDED \
         Z(APMPI_F_NUM_INDICES) 
 
 /* float counters for the "APMPI" module */
-#define X F_P2P
-#define V F_P2P
+#define X F_TIME
+#define V F_TIME
 enum apmpi_f_mpiop_totaltime_indices
 {
     APMPI_F_MPIOP_TOTALTIME_COUNTERS
