@@ -211,7 +211,6 @@ struct darshan_apmpi_header_record
     int64_t magic;
     double apmpi_f_variance_total_mpitime;
     double apmpi_f_variance_total_mpisynctime;
-    uint64_t appid;
 };
 
 #endif /* __APMPI_LOG_FORMAT_H */

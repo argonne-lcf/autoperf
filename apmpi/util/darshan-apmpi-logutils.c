@@ -136,7 +136,6 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
                 DARSHAN_BSWAP64(&(hdr_rec->apmpi_f_variance_total_mpitime));
                 DARSHAN_BSWAP64(&(hdr_rec->apmpi_f_variance_total_mpisynctime));
-                DARSHAN_BSWAP64(&(hdr_rec->appid));
             }
             else
             {
@@ -211,9 +210,6 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
     if (first_rec)
     {
         hdr_rec = rec;
-        DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
-            hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "application_id", hdr_rec->appid, "", "", "");
         DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpitime,
@@ -290,10 +286,6 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
         if (!hdr_rec2) 
         {
             printf("- ");   
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
-                hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "appid", hdr_rec1->appid, "", "", "");
-            printf("- ");   
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
@@ -305,10 +297,6 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
         }
         else if (!hdr_rec1)
         {
-            printf("+ ");   
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
-                hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "appid", hdr_rec2->appid, "", "", "");
             printf("+ ");
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
@@ -321,18 +309,6 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
         }
         else
         {   
-            if (hdr_rec1->appid != hdr_rec2->appid)
-            {
-                printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
-                hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "application_id", hdr_rec1->appid, "", "", "");
-
-                printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
-                hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "application_id", hdr_rec2->appid, "", "", "");
-            }
             if (hdr_rec1->apmpi_f_variance_total_mpitime != hdr_rec2->apmpi_f_variance_total_mpitime)
             {
                 printf("- ");
