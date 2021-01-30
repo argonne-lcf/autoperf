@@ -6,8 +6,6 @@
 
 #define _XOPEN_SOURCE 500
 #define _GNU_SOURCE
-/* Application id is application launcher specific - this one for ALPS*/
-#define csJOBID_ENV_STR "ALPS_APP_ID"
 
 #include "darshan-runtime-config.h"
 #include <stdio.h>
@@ -16,6 +14,9 @@
 #include <pthread.h>
 #include <assert.h>
 #include <papi.h>
+
+/* for node id - Cray PMI specific */
+#include "pmi_cray_ext.h"
 
 #include "uthash.h"
 #include "darshan.h"
@@ -270,6 +271,7 @@ static void capture(struct darshan_apmpi_perf_record *rec,
 {
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
+    PMI_CNOS_Get_nid(my_rank, &rec->nodeid);
 
     return;
 }

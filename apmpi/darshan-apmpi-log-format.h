@@ -200,6 +200,8 @@ enum apmpi_f_mpi_global_indices
 struct darshan_apmpi_perf_record
 {
     struct darshan_base_record base_rec;
+    /* nodeid is system dependent */
+    uint32_t nodeid;
     uint64_t counters[APMPI_NUM_INDICES];
     double fcounters[APMPI_F_NUM_INDICES];
     double fsynccounters[APMPI_F_SYNC_NUM_INDICES];

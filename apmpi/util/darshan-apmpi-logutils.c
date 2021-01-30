@@ -140,6 +140,7 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
             else
             {
                 prf_rec = (struct darshan_apmpi_perf_record*)buffer;
+                DARSHAN_BSWAP32(&(prf_rec->nodeid));
                 DARSHAN_BSWAP64(&(prf_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(prf_rec->base_rec.rank));
                 for (i = 0; i < APMPI_NUM_INDICES; i++)
@@ -223,7 +224,12 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
     else
     {
         prf_rec = rec;
-        
+
+        DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                  prf_rec->base_rec.rank, prf_rec->base_rec.id,
+                  "nodeid", prf_rec->nodeid,
+                  "", "", "");
+   
         for(i = 0; i < APMPI_NUM_INDICES; i++)
         {
             DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
@@ -339,6 +345,35 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
     }
     else
     {   
+        if(!prf_rec2)
+        {
+            printf("- ");
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                  prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
+                  "nodeid", prf_rec1->nodeid,
+                  "", "", "");
+        }
+        else if (!prf_rec1)
+        {
+            printf("+ ");
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                  prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
+                  "nodeid", prf_rec2->nodeid,
+                  "", "", "");
+        }
+        else if (prf_rec1->nodeid != prf_rec2->nodeid)
+        {
+            printf("- ");
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                  prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
+                  "nodeid", prf_rec1->nodeid,
+                  "", "", "");
+            printf("+ ");
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                  prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
+                  "nodeid", prf_rec2->nodeid,
+                  "", "", "");
+        }
         int i;
         for(i = 0; i < APMPI_NUM_INDICES; i++)
         {
