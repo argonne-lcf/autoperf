@@ -150,7 +150,7 @@ enum apmpi_mpiop_indices
         APMPI_MPI_BLOCKING_COLL \
         APMPI_MPI_NONBLOCKING_COLL \
 	APMPI_MPI_ONESIDED \
-        Z(APMPI_F_NUM_INDICES) 
+        Z(APMPI_F_MPIOP_TOTALTIME_NUM_INDICES) 
 
 /* float counters for the "APMPI" module */
 #define X F_TIME
@@ -167,11 +167,11 @@ enum apmpi_f_mpiop_totaltime_indices
 #define APMPI_F_MPIOP_SYNCTIME_COUNTERS \
 	APMPI_MPI_COLL_SYNC \
 	APMPI_MPI_BLOCKING_COLL \
-        Z(APMPI_F_SYNC_NUM_INDICES) 
+        Z(APMPI_F_MPIOP_SYNCTIME_NUM_INDICES) 
 /* float counters for the "APMPI" module */
 #define X F_SYNC
 #define V F_SYNC
-enum apmpi_f_mpiop_totalsync_indices
+enum apmpi_f_mpiop_synctime_indices
 {
     APMPI_F_MPIOP_SYNCTIME_COUNTERS
 };
@@ -179,13 +179,13 @@ enum apmpi_f_mpiop_totalsync_indices
 #undef V
 
         /* aggregate (across all the ranks) per MPI op times  */ 
-#define APMPI_F_MPI_GLOBAL_COUNTERS \
+#define APMPI_F_RANK_TOTAL_COUNTERS \
 	Y(RANK_TOTAL_MPITIME) \
 	Y(RANK_TOTAL_MPISYNCTIME) \
-	Z(APMPI_F_GLOBAL_NUM_INDICES)
+	Z(APMPI_F_RANK_TOTAL_NUM_INDICES)
 enum apmpi_f_mpi_global_indices
 {
-    APMPI_F_MPI_GLOBAL_COUNTERS
+    APMPI_F_RANK_TOTAL_COUNTERS
 };
 #undef Z
 #undef Y
@@ -203,9 +203,9 @@ struct darshan_apmpi_perf_record
     /* nodeid is system dependent */
     uint32_t nodeid;
     uint64_t counters[APMPI_NUM_INDICES];
-    double fcounters[APMPI_F_NUM_INDICES];
-    double fsynccounters[APMPI_F_SYNC_NUM_INDICES];
-    double fglobalcounters[APMPI_F_GLOBAL_NUM_INDICES];
+    double fcounters[APMPI_F_MPIOP_TOTALTIME_NUM_INDICES];
+    double fsynccounters[APMPI_F_MPIOP_SYNCTIME_NUM_INDICES];
+    double fglobalcounters[APMPI_F_RANK_TOTAL_NUM_INDICES];
 };
 struct darshan_apmpi_header_record
 {
