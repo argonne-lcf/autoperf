@@ -14,7 +14,7 @@ struct darshan_apxc_perf_record
     int blade; 
     int node;
     int marked;
-    uint64_t counters[396];
+    uint64_t counters[392];
 };
 struct darshan_apxc_header_record
 {
@@ -40,7 +40,7 @@ def get_apxc_defs():
 def log_get_apxc_record(log, dtype='dict'):
     from darshan.backend.cffi_backend import ffi, libdutil, log_get_modules, counter_names
 
-    mod_name = 'apxc'
+    mod_name = 'APXC'
     modules = log_get_modules(log)
 
 
