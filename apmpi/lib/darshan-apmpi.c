@@ -250,7 +250,7 @@ static void initialize_counters (void)
     {
         apmpi_runtime->perf_record->fsynccounters[i] = 0;
     }
-    for (i = 0; i < APMPI_F_RANK_TOTAL_NUM_INDICES; i++)
+    for (i = 0; i < APMPI_F_MPI_GLOBAL_NUM_INDICES; i++)
     {
         apmpi_runtime->perf_record->fsynccounters[i] = 0;
     }
