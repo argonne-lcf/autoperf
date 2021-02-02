@@ -1,0 +1,27 @@
+# 
+# AutoPerf Make rules for Darshan
+#
+
+VPATH += :$(srcdir)/../modules/autoperf/apxc/util
+
+DARSHAN_MOD_LOG_FORMATS += $(srcdir)/../modules/autoperf/apxc/darshan-apxc-log-format.h
+DARSHAN_MOD_LOGUTIL_HEADERS += darshan-apxc-logutils.h
+DARSHAN_STATIC_MOD_OBJS += darshan-apxc-logutils.o
+DARSHAN_DYNAMIC_MOD_OBJS += darshan-apxc-logutils.po
+
+CFLAGS += \
+          -DDARSHAN_USE_APXC \
+          -I$(srcdir)/../modules/autoperf/apxc \
+          -I$(srcdir)/../modules/autoperf/apxc/util
+
+CFLAGS_SHARED += \
+         -DDARSHAN_USE_APXC \
+         -I$(srcdir)/../modules/autoperf/apxc \
+         -I$(srcdir)/../modules/autoperf/apxc/util
+
+darshan-apxc-logutils.o: darshan-apxc-logutils.c darshan-logutils.h darshan-apxc-logutils.h $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/apxc/darshan-apxc-log-format.h | uthash-1.9.2
+	$(CC) $(CFLAGS) -c  $< -o $@
+
+darshan-apxc-logutils.po: darshan-apxc-logutils.c darshan-logutils.h darshan-apxc-logutils.h $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/apxc/darshan-apxc-log-format.h | uthash-1.9.2
+	$(CC) $(CFLAGS_SHARED) -c  $< -o $@
+

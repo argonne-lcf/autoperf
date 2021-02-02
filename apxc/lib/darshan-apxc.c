@@ -179,7 +179,7 @@ void apxc_runtime_initialize()
         &my_rank,
         NULL);
 
-    /* not enough memory to fit crayxc module record */
+    /* not enough memory to fit apxc module record */
     if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
     {
         darshan_core_unregister_module(APXC_MOD);
@@ -199,13 +199,13 @@ void apxc_runtime_initialize()
 
     if (my_rank == 0)
     {
-        apxc_runtime->header_id = darshan_core_gen_record_id("darshan-crayxc-header");
+        apxc_runtime->header_id = darshan_core_gen_record_id("darshan-apxc-header");
 
-        /* register the crayxc file record with darshan-core */
+        /* register the apxc file record with darshan-core */
         apxc_runtime->header_record = darshan_core_register_record(
             apxc_runtime->header_id,
             //NULL,
-            "darshan-crayxc-header",
+            "darshan-apxc-header",
             APXC_MOD,
             sizeof(struct darshan_apxc_header_record),
             NULL);
@@ -227,7 +227,7 @@ void apxc_runtime_initialize()
                   &apxc_runtime->blade,
                   &apxc_runtime->node);
 
-    sprintf(rtr_rec_name, "darshan-crayxc-rtr-%d-%d-%d",
+    sprintf(rtr_rec_name, "darshan-apxc-rtr-%d-%d-%d",
             apxc_runtime->group, apxc_runtime->chassis, apxc_runtime->blade);
     //apxc_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
     apxc_runtime->rtr_id = darshan_core_gen_record_id("APXC");
@@ -258,7 +258,7 @@ void apxc_runtime_initialize()
  * shutdown function exported by this module for coordinating with darshan-core *
  ********************************************************************************/
 
-/* Pass data for the crayxc module back to darshan-core to log to file. */
+/* Pass data for the apxc module back to darshan-core to log to file. */
 //#ifdef HAVE_MPI
 static void apxc_mpi_redux(
     void *apxc_buf,
