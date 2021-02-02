@@ -21,11 +21,13 @@ def main():
     print ("This log does not contain AutoPerf MPI data")
     return
 
-  report.mod_read_all_records('APMPI', mode='dict')
+  hdr = darshan.backend.cffi_backend.log_get_apmpi_record(report.log)
 
   print("{:<8}{:<16}{:<10}{:<15}{:<18}{:<10}{:<10}{:<10}{:<10}{:<10}{:<10}\n{}".format(
      "Rank","Call", "Count", "Total Bytes", "Total Time", "0-256", "256-1K", "1K-8K", "8K-256K", "256K-1M", "1M+", "="*120))
-  for r in report.records['APMPI']:
+
+  r = darshan.backend.cffi_backend.log_get_apmpi_record(report.log)
+  while (r):
     for c in cnames:
       # counter fields for each base type
       ncall  = c
@@ -52,6 +54,7 @@ def main():
         h3=r['counters'][h3],
         h4=r['counters'][h4],
         h5=r['counters'][h5])) 
+    r = darshan.backend.cffi_backend.log_get_apmpi_record(report.log)
 
   return
 
