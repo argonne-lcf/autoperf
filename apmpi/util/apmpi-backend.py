@@ -9,6 +9,7 @@ structdefs = '''
 struct darshan_apmpi_perf_record
 {
     struct darshan_base_record base_rec;
+    uint32_t nodeid;
     uint64_t counters[364];
     double fcounters[168];
     double fsynccounters[16];
@@ -16,7 +17,7 @@ struct darshan_apmpi_perf_record
 };
 struct darshan_apmpi_header_record
 {
-    struct darshan_base_record base_rec;
+    struct darshan_base_record base_rec;  
     int64_t magic;
     double apmpi_f_variance_total_mpitime;
     double apmpi_f_variance_total_mpisynctime;

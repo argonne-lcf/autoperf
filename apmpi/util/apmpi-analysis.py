@@ -27,6 +27,7 @@ def main():
      "Rank","Call", "Count", "Total Bytes", "Total Time", "0-256", "256-1K", "1K-8K", "8K-256K", "256K-1M", "1M+", "="*120))
 
   r = darshan.backend.cffi_backend.log_get_apmpi_record(report.log)
+  
   while (r):
     for c in cnames:
       # counter fields for each base type
