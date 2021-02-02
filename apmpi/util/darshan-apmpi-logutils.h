@@ -9,7 +9,7 @@
 
 extern char *apmpi_counter_names[];
 extern char *apmpi_f_mpiop_totaltime_counter_names[]; 
-extern char *apmpi_f_mpiop_totalsync_counter_names[];
+extern char *apmpi_f_mpiop_synctime_counter_names[];
 extern char *apmpi_f_mpi_global_counter_names[];
 extern struct darshan_mod_logutil_funcs apmpi_logutils;
 
