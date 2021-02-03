@@ -841,6 +841,29 @@ int DARSHAN_DECL(MPI_Sendrecv)(const void *sendbuf, int sendcount, MPI_Datatype 
 DARSHAN_WRAPPER_MAP(PMPI_Sendrecv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
                  int source, int recvtag, MPI_Comm comm, MPI_Status * status), MPI_Sendrecv)
+int DARSHAN_DECL(MPI_Sendrecv_replace)(void *buf, int count, MPI_Datatype datatype, int dest, int sendtag,
+                 int source, int recvtag, MPI_Comm comm, MPI_Status * status)
+{
+    MAP_OR_FAIL(PMPI_Sendrecv_replace);
+    TIME(__real_PMPI_Sendrecv_replace(buf, count, datatype, dest, sendtag, source, recvtag, comm, status));
+    
+    int count_received; //, src;
+    if (status != MPI_STATUS_IGNORE) {
+        PMPI_Get_count(status, datatype, &count_received);
+        if (count_received == MPI_UNDEFINED) count_received = count;
+        //src = status->MPI_SOURCE;
+    }
+    else {
+        count_received = count;
+        //src = source;
+    }
+    BYTECOUNT(datatype, count + count_received);
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE(MPI_SENDRECV_REPLACE);
+    APMPI_POST_RECORD();
+
+    return ret;
+}
 /*
 int DARSHAN_DECL(MPI_Isendrecv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
