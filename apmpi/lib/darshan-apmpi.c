@@ -94,17 +94,22 @@ DARSHAN_FORWARD_DECL(PMPI_Send, int, (const void *buf, int count, MPI_Datatype d
 DARSHAN_FORWARD_DECL(PMPI_Ssend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Rsend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Bsend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
-DARSHAN_FORWARD_DECL(PMPI_Isend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
-DARSHAN_FORWARD_DECL(PMPI_Issend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
-DARSHAN_FORWARD_DECL(PMPI_Irsend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
-DARSHAN_FORWARD_DECL(PMPI_Ibsend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
 DARSHAN_FORWARD_DECL(PMPI_Recv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status));
-DARSHAN_FORWARD_DECL(PMPI_Irecv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request));
 DARSHAN_FORWARD_DECL(PMPI_Sendrecv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
                  int source, int recvtag, MPI_Comm comm, MPI_Status * status));
 DARSHAN_FORWARD_DECL(PMPI_Sendrecv_replace, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int sendtag,
                  int source, int recvtag, MPI_Comm comm, MPI_Status * status));
+DARSHAN_FORWARD_DECL(PMPI_Isend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Issend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Irsend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Ibsend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Irecv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request));
+/*
+DARSHAN_FORWARD_DECL(PMPI_Isendrecv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf,
+int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Request *request));
+DARSHAN_FORWARD_DECL(PMPI_Isendrecv_replace, int, (void *buf, int count, MPI_Datatype datatype, int dest, int sendtag, int source, int recvtag, MPI_Comm comm, MPI_Request *request));
+*/
 DARSHAN_FORWARD_DECL(PMPI_Probe, int, (int source, int tag, MPI_Comm comm, MPI_Status * status));
 DARSHAN_FORWARD_DECL(PMPI_Iprobe, int, (int source, int tag, MPI_Comm comm, int *flag, MPI_Status * status));
 DARSHAN_FORWARD_DECL(PMPI_Test, int, (MPI_Request *request, int *flag, MPI_Status *status));
@@ -194,6 +199,52 @@ DARSHAN_FORWARD_DECL(PMPI_Iscan, int, (const void *sendbuf, void *recvbuf, int c
              MPI_Op op, MPI_Comm comm, MPI_Request * request)); 
 DARSHAN_FORWARD_DECL(PMPI_Iexscan, int, (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
                MPI_Op op, MPI_Comm comm, MPI_Request * request));
+
+DARSHAN_FORWARD_DECL(PMPI_Accumulate, int, (const void *origin_addr, int origin_count, MPI_Datatype
+                   origin_datatype, int target_rank, MPI_Aint
+                   target_disp, int target_count, MPI_Datatype
+                   target_datatype, MPI_Op op, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Get_accumulate, int, (const void *origin_addr, int origin_count,
+        MPI_Datatype origin_datatype, void *result_addr, int result_count,
+        MPI_Datatype result_datatype, int target_rank, MPI_Aint target_disp,
+        int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Fetch_and_op, int, (const void *origin_addr, void *result_addr,
+        MPI_Datatype datatype, int target_rank, MPI_Aint target_disp,
+        MPI_Op op, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Compare_and_swap, int, (const void *origin_addr, const void *compare_addr,
+        void *result_addr, MPI_Datatype datatype, int target_rank,
+        MPI_Aint target_disp, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_fence, int, (int assert, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_start, int, (MPI_Group group, int assert, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_complete, int, (MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_post, int, (MPI_Group group, int assert, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_wait, int, (MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_test, int, (MPI_Win win, int *flag));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_lock, int, (int lock_type, int rank, int assert, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_unlock, int, (int rank, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_unlock_all, int, (MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_flush, int, (int rank, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_flush_all, int, (MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_flush_local, int, (int rank, MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_flush_local_all, int, (MPI_Win win));
+
+DARSHAN_FORWARD_DECL(PMPI_Win_sync, int, (MPI_Win win));
 
 /*
  * Global runtime struct for tracking data needed at runtime
@@ -790,34 +841,43 @@ int DARSHAN_DECL(MPI_Sendrecv)(const void *sendbuf, int sendcount, MPI_Datatype 
 DARSHAN_WRAPPER_MAP(PMPI_Sendrecv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
                  int source, int recvtag, MPI_Comm comm, MPI_Status * status), MPI_Sendrecv)
-
-int DARSHAN_DECL(MPI_Sendrecv_replace)(void *buf, int count, MPI_Datatype datatype, int dest, int sendtag,
-                 int source, int recvtag, MPI_Comm comm, MPI_Status * status)
+/*
+int DARSHAN_DECL(MPI_Isendrecv)(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                 int source, int recvtag, MPI_Comm comm, MPI_Request *request)
 {
-    MAP_OR_FAIL(PMPI_Sendrecv_replace);
+    MAP_OR_FAIL(PMPI_Isendrecv);
     
-    TIME(__real_PMPI_Sendrecv_replace(buf, count, datatype, dest, sendtag, source, recvtag, comm, status));
+    TIME(__real_PMPI_Isendrecv(sendbuf, sendcount, sendtype, dest, sendtag, recvbuf, recvcount, recvtype, source, recvtag, comm, request));
     
-    int count_received; //, src;
-    if (status != MPI_STATUS_IGNORE) {
-        PMPI_Get_count(status, datatype, &count_received);
-        if (count_received == MPI_UNDEFINED) count_received = count;
-        //src = status->MPI_SOURCE;
-    }
-    else {
-        count_received = count;
-        //src = source;
-    }
-    BYTECOUNT(datatype, count + count_received);
+    BYTECOUNT(sendtype, sendcount + recvcount);
     
     APMPI_PRE_RECORD();
-    APMPI_RECORD_UPDATE(MPI_SENDRECV_REPLACE);
+    APMPI_RECORD_UPDATE(MPI_ISENDRECV);
     APMPI_POST_RECORD();
     return ret;
 }
-DARSHAN_WRAPPER_MAP(PMPI_Sendrecv_replace, int, (void *buf, int count, MPI_Datatype datatype, int dest, int sendtag,
-                 int source, int recvtag, MPI_Comm comm, MPI_Status * status), MPI_Sendrecv_replace)
+DARSHAN_WRAPPER_MAP(PMPI_Isendrecv, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag,
+                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                 int source, int recvtag, MPI_Comm comm, MPI_Request *request), MPI_Isendrecv)
 
+int DARSHAN_DECL(MPI_Isendrecv_replace)(void *buf, int count, MPI_Datatype datatype, int dest, int sendtag,
+                 int source, int recvtag, MPI_Comm comm, MPI_Request *request)
+{
+    MAP_OR_FAIL(PMPI_Isendrecv_replace);
+    
+    TIME(__real_PMPI_Isendrecv_replace(buf, count, datatype, dest, sendtag, source, recvtag, comm, request));
+    
+    BYTECOUNT(datatype, count + count);
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE(MPI_ISENDRECV_REPLACE);
+    APMPI_POST_RECORD();
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Isendrecv_replace, int, (void *buf, int count, MPI_Datatype datatype, int dest, int sendtag,
+                 int source, int recvtag, MPI_Comm comm, MPI_Request *request), MPI_Isendrecv_replace)
+*/
 int DARSHAN_DECL(MPI_Put)(const void *origin_addr, int origin_count, MPI_Datatype
             origin_datatype, int target_rank, MPI_Aint target_disp,
             int target_count, MPI_Datatype target_datatype, MPI_Win win)
@@ -854,6 +914,273 @@ int DARSHAN_DECL(MPI_Get)(void *origin_addr, int origin_count, MPI_Datatype
 DARSHAN_WRAPPER_MAP(PMPI_Get, int, (void *origin_addr, int origin_count, MPI_Datatype
             origin_datatype, int target_rank, MPI_Aint target_disp,
             int target_count, MPI_Datatype target_datatype, MPI_Win win), MPI_Get)
+
+
+int DARSHAN_DECL(MPI_Accumulate)(const void *origin_addr, int origin_count, MPI_Datatype
+                   origin_datatype, int target_rank, MPI_Aint
+                   target_disp, int target_count, MPI_Datatype
+                   target_datatype, MPI_Op op, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Accumulate);
+    TIME(__real_PMPI_Accumulate(origin_addr, origin_count, 
+                   origin_datatype, target_rank, 
+                   target_disp, target_count, 
+                   target_datatype, op, win));
+    
+    BYTECOUNT(target_datatype, target_count);
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE(MPI_ACCUMULATE);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Accumulate, int, (const void *origin_addr, int origin_count, MPI_Datatype
+                   origin_datatype, int target_rank, MPI_Aint
+                   target_disp, int target_count, MPI_Datatype
+                   target_datatype, MPI_Op op, MPI_Win win), MPI_Accumulate)
+
+int DARSHAN_DECL(MPI_Get_accumulate)(const void *origin_addr, int origin_count,
+        MPI_Datatype origin_datatype, void *result_addr, int result_count,
+        MPI_Datatype result_datatype, int target_rank, MPI_Aint target_disp,
+        int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Get_accumulate);
+    TIME(__real_PMPI_Get_accumulate(origin_addr, origin_count,
+        origin_datatype, result_addr, result_count,
+        result_datatype, target_rank, target_disp,
+        target_count, target_datatype, op, win));
+    
+    BYTECOUNT(target_datatype, target_count);
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE(MPI_GET_ACCUMULATE);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Get_accumulate, int, (const void *origin_addr, int origin_count,
+        MPI_Datatype origin_datatype, void *result_addr, int result_count,
+        MPI_Datatype result_datatype, int target_rank, MPI_Aint target_disp,
+        int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win), MPI_Get_accumulate)
+
+int DARSHAN_DECL(MPI_Fetch_and_op)(const void *origin_addr, void *result_addr,
+        MPI_Datatype datatype, int target_rank, MPI_Aint target_disp,
+        MPI_Op op, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Fetch_and_op);
+    TIME(__real_PMPI_Fetch_and_op(origin_addr, result_addr,
+        datatype, target_rank, target_disp,
+        op, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_FETCH_AND_OP);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Fetch_and_op, int, (const void *origin_addr, void *result_addr,
+        MPI_Datatype datatype, int target_rank, MPI_Aint target_disp,
+        MPI_Op op, MPI_Win win), MPI_Fetch_and_op)
+
+int DARSHAN_DECL(MPI_Compare_and_swap)(const void *origin_addr, const void *compare_addr,
+        void *result_addr, MPI_Datatype datatype, int target_rank,
+        MPI_Aint target_disp, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Compare_and_swap);
+    TIME(__real_PMPI_Compare_and_swap(origin_addr, compare_addr,
+        result_addr, datatype, target_rank,
+        target_disp, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_COMPARE_AND_SWAP);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Compare_and_swap, int, (const void *origin_addr, const void *compare_addr,
+        void *result_addr, MPI_Datatype datatype, int target_rank,
+        MPI_Aint target_disp, MPI_Win win), MPI_Compare_and_swap)
+
+int DARSHAN_DECL(MPI_Win_fence)(int assert, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_fence);
+    TIME(__real_PMPI_Win_fence(assert, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_FENCE);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_fence, int, (int assert, MPI_Win win), MPI_Win_fence)
+
+int DARSHAN_DECL(MPI_Win_start)(MPI_Group group, int assert, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_start);
+    TIME(__real_PMPI_Win_start(group, assert, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_START);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_start, int, (MPI_Group group, int assert, MPI_Win win), MPI_Win_start)
+
+int DARSHAN_DECL(MPI_Win_complete)(MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_complete);
+    TIME(__real_PMPI_Win_complete(win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_COMPLETE);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_complete, int, (MPI_Win win), MPI_Win_complete)
+
+int DARSHAN_DECL(MPI_Win_post)(MPI_Group group, int assert, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_post);
+    TIME(__real_PMPI_Win_post(group, assert, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_POST);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_post, int, (MPI_Group group, int assert, MPI_Win win), MPI_Win_post)
+
+int DARSHAN_DECL(MPI_Win_wait)(MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_wait);
+    TIME(__real_PMPI_Win_wait(win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_WAIT);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_wait, int, (MPI_Win win), MPI_Win_wait)
+
+int DARSHAN_DECL(MPI_Win_test)(MPI_Win win, int *flag)
+{
+    MAP_OR_FAIL(PMPI_Win_test);
+    TIME(__real_PMPI_Win_test(win, flag));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_TEST);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_test, int, (MPI_Win win, int *flag), MPI_Win_test)
+
+int DARSHAN_DECL(MPI_Win_lock)(int lock_type, int rank, int assert, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_lock);
+    TIME(__real_PMPI_Win_lock(lock_type, rank, assert, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_LOCK);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_lock, int, (int lock_type, int rank, int assert, MPI_Win win), MPI_Win_lock)
+
+int DARSHAN_DECL(MPI_Win_unlock)(int rank, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_unlock);
+    TIME(__real_PMPI_Win_unlock(rank, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_UNLOCK);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_unlock, int, (int rank, MPI_Win win), MPI_Win_unlock)
+
+int DARSHAN_DECL(MPI_Win_unlock_all)(MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_unlock_all);
+    TIME(__real_PMPI_Win_unlock_all(win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_UNLOCK_ALL);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_unlock_all, int, (MPI_Win win), MPI_Win_unlock_all)
+
+int DARSHAN_DECL(MPI_Win_flush)(int rank, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_flush);
+    TIME(__real_PMPI_Win_flush(rank, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_FLUSH);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_flush, int, (int rank, MPI_Win win), MPI_Win_flush)
+
+int DARSHAN_DECL(MPI_Win_flush_all)(MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_flush_all);
+    TIME(__real_PMPI_Win_flush_all(win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_FLUSH_ALL);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_flush_all, int, (MPI_Win win), MPI_Win_flush_all)
+
+int DARSHAN_DECL(MPI_Win_flush_local)(int rank, MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_flush_local);
+    TIME(__real_PMPI_Win_flush_local(rank, win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_FLUSH_LOCAL);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_flush_local, int, (int rank, MPI_Win win), MPI_Win_flush_local)
+
+int DARSHAN_DECL(MPI_Win_flush_local_all)(MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_flush_local_all);
+    TIME(__real_PMPI_Win_flush_local_all(win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_FLUSH_LOCAL_ALL);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_flush_local_all, int, (MPI_Win win), MPI_Win_flush_local_all)
+
+int DARSHAN_DECL(MPI_Win_sync)(MPI_Win win)
+{
+    MAP_OR_FAIL(PMPI_Win_sync);
+    TIME(__real_PMPI_Win_sync(win));
+    
+    APMPI_PRE_RECORD();
+    APMPI_RECORD_UPDATE_NOMSG(MPI_WIN_SYNC);
+    APMPI_POST_RECORD();
+    
+    return ret;
+}
+DARSHAN_WRAPPER_MAP(PMPI_Win_sync, int, (MPI_Win win), MPI_Win_sync)
 
 int DARSHAN_DECL(MPI_Probe)(int source, int tag, MPI_Comm comm, MPI_Status * status)
 {
