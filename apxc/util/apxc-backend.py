@@ -65,11 +65,12 @@ def log_get_apxc_record(log, dtype='dict'):
       rec['ngroups'] = hdr[0].ngroups
       rec['memory_mode'] = memory_modes[mm]
       rec['cluster_mode'] = cluster_modes[cm]
+      rec['appid'] = hdr[0].appid
     else:
-      rec['group'] = prf[0].counters[0]
-      rec['chassis'] = prf[0].counters[1]
-      rec['blade'] = prf[0].counters[2]
-      rec['node'] = prf[0].counters[3]
+      rec['group'] = prf[0].group
+      rec['chassis'] = prf[0].chassis
+      rec['blade'] = prf[0].blade
+      rec['node'] = prf[0].node
       lst = []
       for i in range(0, len(prf[0].counters)):
         lst.append(prf[0].counters[i])
