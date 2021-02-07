@@ -70,6 +70,7 @@ struct darshan_mod_logutil_funcs apmpi_logutils =
     .log_agg_records = NULL
 };
 
+
 static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
 {
     struct darshan_apmpi_header_record *hdr_rec;
@@ -140,7 +141,6 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
             else
             {
                 prf_rec = (struct darshan_apmpi_perf_record*)buffer;
-                DARSHAN_BSWAP32(&(prf_rec->nodeid));
                 DARSHAN_BSWAP64(&(prf_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(prf_rec->base_rec.rank));
                 for (i = 0; i < APMPI_NUM_INDICES; i++)
@@ -225,9 +225,9 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
     {
         prf_rec = rec;
 
-        DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+        DARSHAN_S_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                   prf_rec->base_rec.rank, prf_rec->base_rec.id,
-                  "nodeid", prf_rec->nodeid,
+                  "nodeid", prf_rec->node_name,
                   "", "", "");
    
         for(i = 0; i < APMPI_NUM_INDICES; i++)
@@ -348,30 +348,30 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
         if(!prf_rec2)
         {
             printf("- ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                   prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                  "nodeid", prf_rec1->nodeid,
+                  "nodeid", prf_rec1->node_name,
                   "", "", "");
         }
         else if (!prf_rec1)
         {
             printf("+ ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                   prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                  "nodeid", prf_rec2->nodeid,
+                  "nodeid", prf_rec2->node_name,
                   "", "", "");
         }
-        else if (prf_rec1->nodeid != prf_rec2->nodeid)
+        else if (prf_rec1->node_name != prf_rec2->node_name)
         {
             printf("- ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                   prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                  "nodeid", prf_rec1->nodeid,
+                  "nodeid", prf_rec1->node_name,
                   "", "", "");
             printf("+ ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                   prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                  "nodeid", prf_rec2->nodeid,
+                  "nodeid", prf_rec2->node_name,
                   "", "", "");
         }
         int i;

@@ -6,7 +6,9 @@
 
 #ifndef __APMPI_LOG_FORMAT_H
 #define __APMPI_LOG_FORMAT_H
-
+#ifndef MPI_MAX_PROCESSOR_NAME
+#define MPI_MAX_PROCESSOR_NAME 128
+#endif
 /* current AutoPerf MPI log format version */
 #define APMPI_VER 1
 
@@ -226,12 +228,11 @@ enum apmpi_f_mpi_global_indices
 struct darshan_apmpi_perf_record
 {
     struct darshan_base_record base_rec;
-    /* nodeid is system dependent */
-    uint32_t nodeid;
     uint64_t counters[APMPI_NUM_INDICES];
     double fcounters[APMPI_F_MPIOP_TOTALTIME_NUM_INDICES];
     double fsynccounters[APMPI_F_MPIOP_SYNCTIME_NUM_INDICES];
     double fglobalcounters[APMPI_F_MPI_GLOBAL_NUM_INDICES];
+    char node_name[MPI_MAX_PROCESSOR_NAME];
 };
 struct darshan_apmpi_header_record
 {

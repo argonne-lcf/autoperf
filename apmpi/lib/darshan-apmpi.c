@@ -15,9 +15,6 @@
 #include <assert.h>
 #include <papi.h>
 
-/* for node id - Cray PMI specific */
-#include "pmi_cray_ext.h"
-
 #include "uthash.h"
 #include "darshan.h"
 #include "darshan-dynamic.h"
@@ -29,6 +26,8 @@ typedef long long ap_bytes_t;
 #define MAX(x,y) ((x>y)?x:y)
 #define MIN(x,y) ((x==0.0)?y:((x<y)?x:y))
 
+#ifdef __APMPI_COLL_SYNC
+
 #define TIME_SYNC(FUNC) \
           double tm1, tm2, tm3, tdiff, tsync;\
           int ret; \
@@ -39,7 +38,18 @@ typedef long long ap_bytes_t;
           tm3 = darshan_core_wtime(); \
           tdiff = tm3-tm2; \
           tsync = tm2-tm1
+#else
 
+#define TIME_SYNC(FUNC) \
+          double tm1, tm2, tdiff, tsync;\
+          int ret; \
+          tm1 = darshan_core_wtime(); \
+          ret = FUNC; \
+          tm2 = darshan_core_wtime(); \
+          tdiff = tm2-tm1; \
+          tsync = -1
+
+#endif
 #define TIME(FUNC) \
           double tm1, tm2, tdiff;\
           int ret; \
@@ -322,7 +332,8 @@ static void capture(struct darshan_apmpi_perf_record *rec,
 {
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
-    PMI_CNOS_Get_nid(my_rank, &rec->nodeid);
+    int name_len;
+    MPI_Get_processor_name(rec->node_name, &name_len);
 
     return;
 }
