@@ -59,7 +59,6 @@ def log_get_apmpi_record(log, dtype='dict'):
       rec['variance_total_mpitime'] = hdr[0].apmpi_f_variance_total_mpitime
       rec['variance_total_mpisynctime'] = hdr[0].apmpi_f_variance_total_mpisynctime
     else:
-      buf = ffi.new("char[]", 128)
       rec['node_name'] = ffi.string(prf[0].node_name).decode("utf-8")
 
       lst = []
