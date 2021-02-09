@@ -9,8 +9,8 @@ structdefs = '''
 struct darshan_apmpi_perf_record
 {
     struct darshan_base_record base_rec;
-    uint64_t counters[364];
-    double fcounters[168];
+    uint64_t counters[396];
+    double fcounters[222];
     double fsynccounters[16];
     double fglobalcounters[2];
     char   node_name[128];
@@ -60,13 +60,7 @@ def log_get_apmpi_record(log, dtype='dict'):
       rec['variance_total_mpisynctime'] = hdr[0].apmpi_f_variance_total_mpisynctime
     else:
       buf = ffi.new("char[]", 128)
-      get_node_name(prf[0].node_name, buf, len(buf))
-      print(ffi.string(buf))
-      #print(prf[0].node_name)
-      #print(type(prf[0].node_name))
-      #print(ffi.string(prf[0].node_name))
-      #print(prf[0])
-      rec['node_name'] = ffi.string(buf).decode("utf-8")
+      rec['node_name'] = ffi.string(prf[0].node_name).decode("utf-8")
 
       lst = []
       for i in range(0, len(prf[0].counters)):
