@@ -74,8 +74,8 @@ def log_get_apxc_record(log, dtype='dict'):
       lst = []
       for i in range(0, len(prf[0].counters)):
         lst.append(prf[0].counters[i])
-        np_counters = np.array(lst, dtype=np.uint64)
-        d_counters = dict(zip(counter_names(mod_name), np_counters))
+      np_counters = np.array(lst, dtype=np.uint64)
+      d_counters = dict(zip(counter_names(mod_name), np_counters))
 
       if dtype == 'numpy':
         rec['counters'] = np_counters
