@@ -19,6 +19,7 @@ struct darshan_apmpi_header_record
 {
     struct darshan_base_record base_rec;  
     int64_t magic;
+    float version;
     double apmpi_f_variance_total_mpitime;
     double apmpi_f_variance_total_mpisynctime;
 };
@@ -53,6 +54,7 @@ def log_get_apmpi_record(log, mod_type, dtype='dict'):
         rec['id'] = hdr[0].base_rec.id
         rec['rank'] = hdr[0].base_rec.rank
         rec['magic'] = hdr[0].magic
+        rec['version'] = hdr[0].version
         rec['variance_total_mpitime'] = hdr[0].apmpi_f_variance_total_mpitime
         rec['variance_total_mpisynctime'] = hdr[0].apmpi_f_variance_total_mpisynctime
     else:

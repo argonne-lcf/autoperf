@@ -411,6 +411,7 @@ void apmpi_runtime_initialize()
         apmpi_runtime->header_record->base_rec.id = apmpi_runtime->header_id;
         apmpi_runtime->header_record->base_rec.rank = my_rank;
         apmpi_runtime->header_record->magic = APMPI_MAGIC;
+        apmpi_runtime->header_record->version = APMPI_VERSION;
     }
 
     apmpi_runtime->rec_id = darshan_core_gen_record_id("APMPI"); //record name
