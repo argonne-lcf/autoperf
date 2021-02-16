@@ -238,7 +238,7 @@ struct darshan_apmpi_header_record
 {
     struct darshan_base_record base_rec;
     int64_t magic;
-    float version;
+    uint32_t version;
     double apmpi_f_variance_total_mpitime;
     double apmpi_f_variance_total_mpisynctime;
 };
