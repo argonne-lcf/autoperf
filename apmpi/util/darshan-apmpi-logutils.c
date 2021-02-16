@@ -205,6 +205,7 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
 {
     int i;
     static int first_rec = 1;
+    static int sync_flag;
     struct darshan_apmpi_header_record *hdr_rec;
     struct darshan_apmpi_perf_record *prf_rec;
     
@@ -215,11 +216,13 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpitime,
             "", "", "");
+        if(hdr_rec->sync_flag)
         DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpisynctime,
             "", "", "");
         first_rec = 0;
+        sync_flag = hdr_rec->sync_flag;
     }
     else
     {
@@ -244,6 +247,7 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
                 apmpi_f_mpiop_totaltime_counter_names[i], prf_rec->fcounters[i],
                 "", "", "");
         }
+        if(sync_flag){
         for(i = 0; i < APMPI_F_MPIOP_SYNCTIME_NUM_INDICES; i++)
         {
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
@@ -251,13 +255,16 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
                 apmpi_f_mpiop_synctime_counter_names[i], prf_rec->fsynccounters[i],
                 "", "", "");
         }
-        for(i = 0; i < APMPI_F_MPI_GLOBAL_NUM_INDICES; i++)
-        {
+        }
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 prf_rec->base_rec.rank, prf_rec->base_rec.id,
-                apmpi_f_mpi_global_counter_names[i], prf_rec->fglobalcounters[i],
+                apmpi_f_mpi_global_counter_names[0], prf_rec->fglobalcounters[0],
                 "", "", "");
-        }
+            if(sync_flag)
+            DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                prf_rec->base_rec.rank, prf_rec->base_rec.id,
+                apmpi_f_mpi_global_counter_names[1], prf_rec->fglobalcounters[1],
+                "", "", "");
     }
 
     return;
@@ -285,7 +292,9 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
     hdr_rec2 = (struct darshan_apmpi_header_record*) file_rec2;
     prf_rec1 = (struct darshan_apmpi_perf_record*) file_rec1;
     prf_rec2 = (struct darshan_apmpi_perf_record*) file_rec2;
-    
+    static int sync_flag;
+    sync_flag = hdr_rec1->sync_flag && hdr_rec2->sync_flag;
+
     if (hdr_rec1->magic == APMPI_MAGIC)
     {
         /* this is the header record */   
@@ -296,6 +305,7 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
                 "", "", "");
+            if(sync_flag)
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
@@ -308,6 +318,7 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
                 "", "", "");
+            if(sync_flag)
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
@@ -328,6 +339,8 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                     "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
                     "", "", "");
             }
+            if(sync_flag)
+            {
             if (hdr_rec1->apmpi_f_variance_total_mpisynctime != hdr_rec2->apmpi_f_variance_total_mpisynctime)
             {
                 printf("- ");
@@ -340,6 +353,7 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                     hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                     "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
                     "", "", "");
+            }
             }
         }
     }
@@ -440,6 +454,8 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                     "", "", "");
             }
         }
+        if(sync_flag)
+        {
         for(i = 0; i < APMPI_F_MPIOP_SYNCTIME_NUM_INDICES; i++)
         {
             if (!prf_rec2)
@@ -473,14 +489,15 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                     "", "", "");
             }
         }
-        for(i = 0; i < APMPI_F_MPI_GLOBAL_NUM_INDICES; i++)
+        }
+        //for(i = 0; i < APMPI_F_MPI_GLOBAL_NUM_INDICES; i++)
         {
             if (!prf_rec2)
             {
                 printf("- ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                    apmpi_f_mpi_global_counter_names[i], prf_rec1->fglobalcounters[i],
+                    apmpi_f_mpi_global_counter_names[0], prf_rec1->fglobalcounters[0],
                     "", "", "");
             }
             else if (!prf_rec1)
@@ -488,23 +505,55 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 printf("+ ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                    apmpi_f_mpi_global_counter_names[i], prf_rec2->fglobalcounters[i],
+                    apmpi_f_mpi_global_counter_names[0], prf_rec2->fglobalcounters[0],
                     "", "", "");
             }
-            else if (prf_rec1->fglobalcounters[i] != prf_rec2->fglobalcounters[i])
+            else if (prf_rec1->fglobalcounters[0] != prf_rec2->fglobalcounters[0])
             {
                 printf("- ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                    apmpi_f_mpi_global_counter_names[i], prf_rec1->fglobalcounters[i],
+                    apmpi_f_mpi_global_counter_names[0], prf_rec1->fglobalcounters[0],
                     "", "", "");
                 printf("+ ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                    apmpi_f_mpi_global_counter_names[i], prf_rec2->fglobalcounters[i],
+                    apmpi_f_mpi_global_counter_names[0], prf_rec2->fglobalcounters[0],
                     "", "", "");
             }
-        }
+            if(sync_flag)
+            {
+            if (!prf_rec2)
+            {
+                printf("- ");
+                DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                    prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
+                    apmpi_f_mpi_global_counter_names[1], prf_rec1->fglobalcounters[1],
+                    "", "", "");
+            }
+            else if (!prf_rec1)
+            {
+                printf("+ ");
+                DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                    prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
+                    apmpi_f_mpi_global_counter_names[1], prf_rec2->fglobalcounters[1],
+                    "", "", "");
+            }
+            else if (prf_rec1->fglobalcounters[1] != prf_rec2->fglobalcounters[1])
+            {
+                printf("- ");
+                DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                    prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
+                    apmpi_f_mpi_global_counter_names[1], prf_rec1->fglobalcounters[1],
+                    "", "", "");
+                printf("+ ");
+                DARSHAN_F_COUNTER_PRINT(darshan_module_names[APMPI_MOD],
+                    prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
+                    apmpi_f_mpi_global_counter_names[1], prf_rec2->fglobalcounters[1],
+                    "", "", "");
+            }
+           }
+       }
     }
 
 

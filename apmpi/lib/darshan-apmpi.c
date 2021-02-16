@@ -47,7 +47,7 @@ typedef long long ap_bytes_t;
           ret = FUNC; \
           tm2 = darshan_core_wtime(); \
           tdiff = tm2-tm1; \
-          tsync = -1
+          tsync = 0
 
 #endif
 #define TIME(FUNC) \
@@ -411,6 +411,11 @@ void apmpi_runtime_initialize()
         apmpi_runtime->header_record->base_rec.id = apmpi_runtime->header_id;
         apmpi_runtime->header_record->base_rec.rank = my_rank;
         apmpi_runtime->header_record->magic = APMPI_MAGIC;
+#ifdef __APMPI_COLL_SYNC
+        apmpi_runtime->header_record->sync_flag = 1;
+#else
+        apmpi_runtime->header_record->sync_flag = 0;
+#endif
         apmpi_runtime->header_record->version = APMPI_VER;
     }
 
@@ -456,7 +461,6 @@ static void apmpi_record_reduction_op (void* inrec_v, void* inoutrec_v,
     }
 }
 #endif
-#if 1
 static void apmpi_shared_record_variance(MPI_Comm mod_comm)
 {
     MPI_Datatype var_dt;
@@ -495,7 +499,7 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
     {   
        apmpi_runtime->header_record->apmpi_f_variance_total_mpitime =
                 (var_recv_buf->S / var_recv_buf->n);
-    }   
+    }
     /* get total mpi sync time variances across the ranks */
     var_send_buf->n = 1;
     var_send_buf->S = 0;
@@ -509,7 +513,6 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
        apmpi_runtime->header_record->apmpi_f_variance_total_mpisynctime =
                 (var_recv_buf->S / var_recv_buf->n);
     }   
-
     PMPI_Type_free(&var_dt);
     PMPI_Op_free(&var_op);
     free(var_send_buf);
@@ -517,7 +520,6 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
 
     return;
 }
-#endif
 
 
 /********************************************************************************
@@ -558,7 +560,6 @@ static void apmpi_mpi_redux(
     }
     apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += mpisync_time;
     apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPISYNCTIME] = mpisync_time;
-    
 #if 0
     red_send_buf = apmpi_runtime->perf_record;
 
