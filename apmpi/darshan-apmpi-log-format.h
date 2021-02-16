@@ -10,7 +10,7 @@
 #define MPI_MAX_PROCESSOR_NAME 128
 #endif
 /* current AutoPerf MPI log format version */
-#define APMPI_VER 0.1
+#define APMPI_VER 1
 
 #define APMPI_MAGIC ('A'*0x100000000+\
                             'P'*0x1000000+\
