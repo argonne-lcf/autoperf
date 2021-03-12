@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
-#include <papi.h>
 
 #include "uthash.h"
 #include "darshan.h"
@@ -22,7 +21,12 @@
 #include "darshan-apmpi-log-format.h"
 
 #include "darshan-apmpi-utils.h"
+
+#ifdef HAVE_MPI_CONST
 DARSHAN_FORWARD_DECL(PMPI_Send, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
+#else
+DARSHAN_FORWARD_DECL(PMPI_Send, int, (void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm));
+#endif
 DARSHAN_FORWARD_DECL(PMPI_Recv, int, (void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status));
 #if 0
 DARSHAN_FORWARD_DECL(PMPI_Isend, int, (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request));
@@ -31,7 +35,11 @@ DARSHAN_FORWARD_DECL(PMPI_Barrier, int, (MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Bcast, int, (void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm));
 DARSHAN_FORWARD_DECL(PMPI_Reduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm));
 #endif
+#ifdef HAVE_MPI_CONST
 DARSHAN_FORWARD_DECL(PMPI_Allreduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm));
+#else
+DARSHAN_FORWARD_DECL(PMPI_Allreduce, int,  (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm));
+#endif
 #if 0
 DARSHAN_FORWARD_DECL(PMPI_Alltoall, int, (const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                  void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm));
@@ -281,8 +289,13 @@ static void apmpi_shutdown(
  *        Wrappers for MPI functions of interest       * 
  **********************************************************/
 
+#ifdef HAVE_MPI_CONST
 int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
              MPI_Comm comm)
+#else
+int DARSHAN_DECL(MPI_Send)(void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+             MPI_Comm comm)
+#endif
 {
     int ret;
     double tm1, tm2;
@@ -299,7 +312,11 @@ int DARSHAN_DECL(MPI_Send)(const void *buf, int count, MPI_Datatype datatype, in
     APMPI_POST_RECORD();
     return ret;
 }
+#ifdef HAVE_MPI_CONST
 DARSHAN_WRAPPER_MAP(PMPI_Send, int,  (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm), MPI_Send)
+#else
+DARSHAN_WRAPPER_MAP(PMPI_Send, int,  (void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm), MPI_Send)
+#endif
 
 int DARSHAN_DECL(MPI_Recv)(void *buf, int count, MPI_Datatype datatype, int source, int tag,
              MPI_Comm comm, MPI_Status *status)
@@ -409,8 +426,13 @@ int DARSHAN_DECL(MPI_Reduce)(const void *sendbuf, void *recvbuf, int count, MPI_
 }
 DARSHAN_WRAPPER_MAP(PMPI_Reduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm), MPI_Reduce)
 #endif
+#ifdef HAVE_MPI_CONST
 int DARSHAN_DECL(MPI_Allreduce)(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
              MPI_Comm comm)
+#else
+int DARSHAN_DECL(MPI_Allreduce)(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op,
+             MPI_Comm comm)
+#endif
 {
     int ret;
     double tm1, tm2;
@@ -426,7 +448,11 @@ int DARSHAN_DECL(MPI_Allreduce)(const void *sendbuf, void *recvbuf, int count, M
     APMPI_POST_RECORD();
     return ret;
 }
+#ifdef HAVE_MPI_CONST
 DARSHAN_WRAPPER_MAP(PMPI_Allreduce, int,  (const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm), MPI_Allreduce)
+#else
+DARSHAN_WRAPPER_MAP(PMPI_Allreduce, int,  (void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm), MPI_Allreduce)
+#endif
 
 #if 0
 int DARSHAN_DECL(MPI_Alltoall)(const void *sendbuf, int sendcount, MPI_Datatype sendtype,

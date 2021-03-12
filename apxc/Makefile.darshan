@@ -4,14 +4,14 @@
 DARSHAN_STATIC_MOD_OBJS += lib/darshan-apxc.o
 DARSHAN_DYNAMIC_MOD_OBJS += lib/darshan-apxc.po
 
-VPATH += :$(srcdir)/../modules/autoperf/crayxc
+VPATH += :$(srcdir)/../modules/autoperf/apxc
 CFLAGS += \
          -DDARSHAN_USE_APXC \
-         -I$(srcdir)/../modules/autoperf/crayxc
+         -I$(srcdir)/../modules/autoperf/apxc
 
 CFLAGS_SHARED += \
          -DDARSHAN_USE_APXC \
-         -I$(srcdir)/../modules/autoperf/crayxc
+         -I$(srcdir)/../modules/autoperf/apxc
 
 lib/darshan-apxc.o: lib/darshan-apxc.c lib/darshan-apxc-utils.h darshan.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apxc-log-format.h | lib
 	$(CC) $(CFLAGS) -c $< -o $@
