@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
-#include <papi.h>
 
 #include "uthash.h"
 #include "darshan.h"
