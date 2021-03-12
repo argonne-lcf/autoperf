@@ -552,7 +552,7 @@ static void apmpi_mpi_redux(
     }
     double mpisync_time = 0.0;
     /* Compute Total MPI time per rank: RANK_TOTAL_MPITIME */
-    for (i=MPI_SEND_TOTAL_TIME; i<APMPI_F_MPIOP_TOTALTIME_NUM_INDICES; i+=3){
+    for (i=MPI_SEND_TOTAL_TIME; i<APMPI_F_MPIOP_TOTALTIME_NUM_INDICES; i+=3){     // times (total_time, max_time, min_time)
         apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += apmpi_runtime->perf_record->fcounters[i];
     }
     for (i=MPI_BARRIER_TOTAL_SYNC_TIME; i<APMPI_F_MPIOP_SYNCTIME_NUM_INDICES; i++){
