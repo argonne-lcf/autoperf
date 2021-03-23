@@ -13,14 +13,11 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
-#include <papi.h>
 
 #include "uthash.h"
 #include "darshan.h"
 #include "darshan-dynamic.h"
 #include "darshan-apmpi-log-format.h"
-
-#include "darshan-apmpi-utils.h"
 
 typedef long long ap_bytes_t;
 #define MAX(x,y) ((x>y)?x:y)
@@ -274,7 +271,7 @@ static pthread_mutex_t apmpi_runtime_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER
 static int my_rank = -1;
 
 /* internal helper functions for the apmpi module */
-void apmpi_runtime_initialize(void);
+static void apmpi_runtime_initialize(void);
 
 /* forward declaration for shutdown function needed to interface with darshan-core */
 #ifdef HAVE_MPI
@@ -298,7 +295,6 @@ static void apmpi_shutdown(
 static void initialize_counters (void)
 {
     int i;
-    int code = 0;
     for (i = 0; i < APMPI_NUM_INDICES; i++)
     {
         apmpi_runtime->perf_record->counters[i] = 0; 
@@ -338,7 +334,7 @@ static void capture(struct darshan_apmpi_perf_record *rec,
     return;
 }
 
-void apmpi_runtime_initialize()
+static void apmpi_runtime_initialize()
 {
     int apmpi_buf_size;
     char rec_name[128];
@@ -364,25 +360,17 @@ void apmpi_runtime_initialize()
 
     /* register the apmpi module with the darshan-core component */
     darshan_core_register_module(
-        APMPI_MOD,
+        DARSHAN_APMPI_MOD,
         mod_funcs,
         &apmpi_buf_size,
         &my_rank,
         NULL);
 
-    /* not enough memory to fit apmpi module record */
-    if(apmpi_buf_size < sizeof(struct darshan_apmpi_header_record) + sizeof(struct darshan_apmpi_perf_record))
-    {
-        darshan_core_unregister_module(APMPI_MOD);
-        APMPI_UNLOCK();
-        return;
-    }
-
     /* initialize module's global state */
     apmpi_runtime = malloc(sizeof(*apmpi_runtime));
     if(!apmpi_runtime)
     {
-        darshan_core_unregister_module(APMPI_MOD);
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
         APMPI_UNLOCK();
         return;
     }
@@ -397,12 +385,12 @@ void apmpi_runtime_initialize()
             apmpi_runtime->header_id,
             //NULL,
             "darshan-apmpi-header",
-            APMPI_MOD,
+            DARSHAN_APMPI_MOD,
             sizeof(struct darshan_apmpi_header_record),
             NULL);
         if(!(apmpi_runtime->header_record))
         {   
-            darshan_core_unregister_module(APMPI_MOD);
+            darshan_core_unregister_module(DARSHAN_APMPI_MOD);
             free(apmpi_runtime);
             apmpi_runtime = NULL;
             APMPI_UNLOCK();
@@ -424,12 +412,12 @@ void apmpi_runtime_initialize()
     apmpi_runtime->perf_record = darshan_core_register_record(
         apmpi_runtime->rec_id,
         "APMPI",
-        APMPI_MOD,
+        DARSHAN_APMPI_MOD,
         sizeof(struct darshan_apmpi_perf_record),
         NULL);
     if(!(apmpi_runtime->perf_record))
     {
-        darshan_core_unregister_module(APMPI_MOD);
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
         free(apmpi_runtime);
         apmpi_runtime = NULL;
         APMPI_UNLOCK();
@@ -643,40 +631,40 @@ static void apmpi_shutdown(
 
 #define APMPI_RECORD_UPDATE(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _TOTAL_BYTES)] += bytes; \
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[Y(MPI_OP ## _MSG_SIZE_AGG_0_256)]), bytes); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _TOTAL_BYTES] += bytes; \
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_OP ## _MSG_SIZE_AGG_0_256]), bytes); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 
 #define APMPI_RECORD_UPDATE_NOMSG(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 
 #define APMPI_RECORD_UPDATE_SYNC(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _TOTAL_BYTES)] += bytes; \
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[Y(MPI_OP ## _MSG_SIZE_AGG_0_256)]), bytes); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fsynccounters[Y(MPI_OP ## _TOTAL_SYNC_TIME)] += tsync; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _TOTAL_BYTES] += bytes; \
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_OP ## _MSG_SIZE_AGG_0_256]), bytes); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fsynccounters[MPI_OP ## _TOTAL_SYNC_TIME] += tsync; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 
 #define APMPI_RECORD_UPDATE_SYNC_NOMSG(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fsynccounters[Y(MPI_OP ## _TOTAL_SYNC_TIME)] += tsync; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fsynccounters[MPI_OP ## _TOTAL_SYNC_TIME] += tsync; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 #define Y(a) a
 
