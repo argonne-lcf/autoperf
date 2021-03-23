@@ -271,7 +271,7 @@ static pthread_mutex_t apmpi_runtime_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER
 static int my_rank = -1;
 
 /* internal helper functions for the apmpi module */
-void apmpi_runtime_initialize(void);
+static void apmpi_runtime_initialize(void);
 
 /* forward declaration for shutdown function needed to interface with darshan-core */
 #ifdef HAVE_MPI
@@ -334,7 +334,7 @@ static void capture(struct darshan_apmpi_perf_record *rec,
     return;
 }
 
-void apmpi_runtime_initialize()
+static void apmpi_runtime_initialize()
 {
     int apmpi_buf_size;
     char rec_name[128];
