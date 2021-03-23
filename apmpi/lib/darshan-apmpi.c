@@ -13,14 +13,11 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
-#include <papi.h>
 
 #include "uthash.h"
 #include "darshan.h"
 #include "darshan-dynamic.h"
 #include "darshan-apmpi-log-format.h"
-
-#include "darshan-apmpi-utils.h"
 
 typedef long long ap_bytes_t;
 #define MAX(x,y) ((x>y)?x:y)
@@ -298,7 +295,6 @@ static void apmpi_shutdown(
 static void initialize_counters (void)
 {
     int i;
-    int code = 0;
     for (i = 0; i < APMPI_NUM_INDICES; i++)
     {
         apmpi_runtime->perf_record->counters[i] = 0; 
@@ -364,25 +360,17 @@ void apmpi_runtime_initialize()
 
     /* register the apmpi module with the darshan-core component */
     darshan_core_register_module(
-        APMPI_MOD,
+        DARSHAN_APMPI_MOD,
         mod_funcs,
         &apmpi_buf_size,
         &my_rank,
         NULL);
 
-    /* not enough memory to fit apmpi module record */
-    if(apmpi_buf_size < sizeof(struct darshan_apmpi_header_record) + sizeof(struct darshan_apmpi_perf_record))
-    {
-        darshan_core_unregister_module(APMPI_MOD);
-        APMPI_UNLOCK();
-        return;
-    }
-
     /* initialize module's global state */
     apmpi_runtime = malloc(sizeof(*apmpi_runtime));
     if(!apmpi_runtime)
     {
-        darshan_core_unregister_module(APMPI_MOD);
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
         APMPI_UNLOCK();
         return;
     }
@@ -397,12 +385,12 @@ void apmpi_runtime_initialize()
             apmpi_runtime->header_id,
             //NULL,
             "darshan-apmpi-header",
-            APMPI_MOD,
+            DARSHAN_APMPI_MOD,
             sizeof(struct darshan_apmpi_header_record),
             NULL);
         if(!(apmpi_runtime->header_record))
         {   
-            darshan_core_unregister_module(APMPI_MOD);
+            darshan_core_unregister_module(DARSHAN_APMPI_MOD);
             free(apmpi_runtime);
             apmpi_runtime = NULL;
             APMPI_UNLOCK();
@@ -424,12 +412,12 @@ void apmpi_runtime_initialize()
     apmpi_runtime->perf_record = darshan_core_register_record(
         apmpi_runtime->rec_id,
         "APMPI",
-        APMPI_MOD,
+        DARSHAN_APMPI_MOD,
         sizeof(struct darshan_apmpi_perf_record),
         NULL);
     if(!(apmpi_runtime->perf_record))
     {
-        darshan_core_unregister_module(APMPI_MOD);
+        darshan_core_unregister_module(DARSHAN_APMPI_MOD);
         free(apmpi_runtime);
         apmpi_runtime = NULL;
         APMPI_UNLOCK();
