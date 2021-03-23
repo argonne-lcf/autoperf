@@ -404,7 +404,6 @@ static void apmpi_runtime_initialize()
 #else
         apmpi_runtime->header_record->sync_flag = 0;
 #endif
-        apmpi_runtime->header_record->version = APMPI_VER;
     }
 
     apmpi_runtime->rec_id = darshan_core_gen_record_id("APMPI"); //record name
@@ -478,7 +477,7 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
     /* get total mpi time variances across the ranks */
     var_send_buf->n = 1;
     var_send_buf->S = 0;
-    var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME];
+    var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[MPI_TOTAL_COMM_TIME];
 
     PMPI_Reduce(var_send_buf, var_recv_buf, 1,
         var_dt, var_op, 0, mod_comm);
@@ -491,7 +490,7 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
     /* get total mpi sync time variances across the ranks */
     var_send_buf->n = 1;
     var_send_buf->S = 0;
-    var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPISYNCTIME];
+    var_send_buf->T = apmpi_runtime->perf_record->fglobalcounters[MPI_TOTAL_COMM_SYNC_TIME];
 
     PMPI_Reduce(var_send_buf, var_recv_buf, 1,
         var_dt, var_op, 0, mod_comm);
@@ -539,15 +538,15 @@ static void apmpi_mpi_redux(
         return;
     }
     double mpisync_time = 0.0;
-    /* Compute Total MPI time per rank: RANK_TOTAL_MPITIME */
+    /* Compute Total MPI time per rank: MPI_TOTAL_COMM_TIME */
     for (i=MPI_SEND_TOTAL_TIME; i<APMPI_F_MPIOP_TOTALTIME_NUM_INDICES; i+=3){     // times (total_time, max_time, min_time)
-        apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += apmpi_runtime->perf_record->fcounters[i];
+        apmpi_runtime->perf_record->fglobalcounters[MPI_TOTAL_COMM_TIME] += apmpi_runtime->perf_record->fcounters[i];
     }
     for (i=MPI_BARRIER_TOTAL_SYNC_TIME; i<APMPI_F_MPIOP_SYNCTIME_NUM_INDICES; i++){
         mpisync_time += apmpi_runtime->perf_record->fsynccounters[i];
     }
-    apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPITIME] += mpisync_time;
-    apmpi_runtime->perf_record->fglobalcounters[RANK_TOTAL_MPISYNCTIME] = mpisync_time;
+    apmpi_runtime->perf_record->fglobalcounters[MPI_TOTAL_COMM_TIME] += mpisync_time;
+    apmpi_runtime->perf_record->fglobalcounters[MPI_TOTAL_COMM_SYNC_TIME] = mpisync_time;
 #if 0
     red_send_buf = apmpi_runtime->perf_record;
 
