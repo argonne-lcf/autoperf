@@ -631,40 +631,40 @@ static void apmpi_shutdown(
 
 #define APMPI_RECORD_UPDATE(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _TOTAL_BYTES)] += bytes; \
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[Y(MPI_OP ## _MSG_SIZE_AGG_0_256)]), bytes); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _TOTAL_BYTES] += bytes; \
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_OP ## _MSG_SIZE_AGG_0_256]), bytes); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 
 #define APMPI_RECORD_UPDATE_NOMSG(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 
 #define APMPI_RECORD_UPDATE_SYNC(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _TOTAL_BYTES)] += bytes; \
-    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[Y(MPI_OP ## _MSG_SIZE_AGG_0_256)]), bytes); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fsynccounters[Y(MPI_OP ## _TOTAL_SYNC_TIME)] += tsync; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _TOTAL_BYTES] += bytes; \
+    DARSHAN_MSG_BUCKET_INC(&(apmpi_runtime->perf_record->counters[MPI_OP ## _MSG_SIZE_AGG_0_256]), bytes); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fsynccounters[MPI_OP ## _TOTAL_SYNC_TIME] += tsync; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 
 #define APMPI_RECORD_UPDATE_SYNC_NOMSG(MPI_OP) do { \
     if(ret != MPI_SUCCESS) break; \
-    apmpi_runtime->perf_record->counters[Y(MPI_OP ## _CALL_COUNT)]++; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _TOTAL_TIME)] += tdiff; \
-    apmpi_runtime->perf_record->fsynccounters[Y(MPI_OP ## _TOTAL_SYNC_TIME)] += tsync; \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
-    apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
+    apmpi_runtime->perf_record->counters[MPI_OP ## _CALL_COUNT]++; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _TOTAL_TIME] += tdiff; \
+    apmpi_runtime->perf_record->fsynccounters[MPI_OP ## _TOTAL_SYNC_TIME] += tsync; \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MAX_TIME] = MAX(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MAX_TIME)], tdiff); \
+    apmpi_runtime->perf_record->fcounters[MPI_OP ## _MIN_TIME] = MIN(apmpi_runtime->perf_record->fcounters[Y(MPI_OP ## _MIN_TIME)], tdiff); \
     } while(0)
 #define Y(a) a
 
