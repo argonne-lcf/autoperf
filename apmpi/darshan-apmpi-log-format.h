@@ -208,8 +208,8 @@ enum apmpi_f_mpiop_synctime_indices
 
         /* aggregate (across all the ranks) per MPI op times  */ 
 #define APMPI_F_MPI_GLOBAL_COUNTERS \
-	Y(RANK_TOTAL_MPITIME) \
-	Y(RANK_TOTAL_MPISYNCTIME) \
+	Y(MPI_TOTAL_COMM_TIME) \
+	Y(MPI_TOTAL_COMM_SYNC_TIME) \
 	Z(APMPI_F_MPI_GLOBAL_NUM_INDICES)
 enum apmpi_f_mpi_global_indices
 {
@@ -238,7 +238,6 @@ struct darshan_apmpi_header_record
 {
     struct darshan_base_record base_rec;
     int64_t magic;
-    uint32_t version;
     uint32_t sync_flag;
     double apmpi_f_variance_total_mpitime;
     double apmpi_f_variance_total_mpisynctime;
