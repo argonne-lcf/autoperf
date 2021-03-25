@@ -60,6 +60,14 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     if(fd->mod_map[DARSHAN_APXC_MOD].len == 0)
         return(0);
 
+    if(fd->mod_ver[DARSHAN_APXC_MOD] == 0 ||
+        fd->mod_ver[DARSHAN_APXC_MOD] > APXC_VER)
+    {
+        fprintf(stderr, "Error: Invalid APXC module version number (got %d)\n",
+            fd->mod_ver[DARSHAN_APXC_MOD]);
+        return(-1);
+    }
+
     if (!*buf_p)
     {
         /* assume this is the largest possible record size */
@@ -74,15 +82,7 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
         buffer = *buf_p;
     }
 
-    if (fd->mod_ver[DARSHAN_APXC_MOD] == 0)
-    {
-        printf("Either unknown or debug version: %d\n",
-               fd->mod_ver[DARSHAN_APXC_MOD]);
-        return(0);
-    }
-
-    if ((fd->mod_ver[DARSHAN_APXC_MOD] > 0) &&
-        (fd->mod_ver[DARSHAN_APXC_MOD] < APXC_VER))
+    if (fd->mod_ver[DARSHAN_APXC_MOD] < APXC_VER)
     {
         /* perform conversion as needed */
     }
@@ -111,11 +111,12 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
                 /* swap bytes if necessary */
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
-                DARSHAN_BSWAP32(&(hdr_rec->nblades));
-                DARSHAN_BSWAP32(&(hdr_rec->nchassis));
-                DARSHAN_BSWAP32(&(hdr_rec->ngroups));
-                DARSHAN_BSWAP32(&(hdr_rec->memory_mode));
-                DARSHAN_BSWAP32(&(hdr_rec->cluster_mode));
+                DARSHAN_BSWAP64(&(hdr_rec->magic));
+                DARSHAN_BSWAP64(&(hdr_rec->nblades));
+                DARSHAN_BSWAP64(&(hdr_rec->nchassis));
+                DARSHAN_BSWAP64(&(hdr_rec->ngroups));
+                DARSHAN_BSWAP64(&(hdr_rec->memory_mode));
+                DARSHAN_BSWAP64(&(hdr_rec->cluster_mode));
                 DARSHAN_BSWAP64(&(hdr_rec->appid));
             }
             else
@@ -140,12 +141,14 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     {
      //*buf_p = NULL;
      //  if (buffer) free(buffer);
+        if (!*buf_p) free(buffer);
         return(-1);
     }
     else
     {
      //  *buf_p = NULL;
      //  if (buffer) free(buffer);
+        if (!*buf_p) free(buffer);
         return(0);
     }
 }
