@@ -434,7 +434,7 @@
     X(CM_NUM_INDICIES)
 
 #define X(a) a,
-/* integer counters for the "BGQ" example module */
+/* integer counters for the "APXC" example module */
 enum darshan_apxc_perf_indices
 {
     APXC_PERF_COUNTERS
