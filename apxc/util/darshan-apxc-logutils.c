@@ -111,11 +111,12 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
                 /* swap bytes if necessary */
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
-                DARSHAN_BSWAP32(&(hdr_rec->nblades));
-                DARSHAN_BSWAP32(&(hdr_rec->nchassis));
-                DARSHAN_BSWAP32(&(hdr_rec->ngroups));
-                DARSHAN_BSWAP32(&(hdr_rec->memory_mode));
-                DARSHAN_BSWAP32(&(hdr_rec->cluster_mode));
+                DARSHAN_BSWAP64(&(hdr_rec->magic));
+                DARSHAN_BSWAP64(&(hdr_rec->nblades));
+                DARSHAN_BSWAP64(&(hdr_rec->nchassis));
+                DARSHAN_BSWAP64(&(hdr_rec->ngroups));
+                DARSHAN_BSWAP64(&(hdr_rec->memory_mode));
+                DARSHAN_BSWAP64(&(hdr_rec->cluster_mode));
                 DARSHAN_BSWAP64(&(hdr_rec->appid));
             }
             else
