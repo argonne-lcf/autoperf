@@ -60,6 +60,7 @@ struct apxc_runtime
     int chassis;
     int blade;
     int node;
+    int perf_record_marked;
 };
 
 static struct apxc_runtime *apxc_runtime = NULL;
@@ -138,7 +139,6 @@ static void capture(struct darshan_apxc_perf_record *rec,
     rec->chassis = apxc_runtime->chassis;
     rec->blade   = apxc_runtime->blade;
     rec->node    = apxc_runtime->node;
-    rec->marked  = 0;
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
 
@@ -173,25 +173,18 @@ void apxc_runtime_initialize()
 
     /* register the APXC module with the darshan-core component */
     darshan_core_register_module(
-        APXC_MOD,
+        DARSHAN_APXC_MOD,
         mod_funcs,
         &apxc_buf_size,
         &my_rank,
         NULL);
 
-    /* not enough memory to fit apxc module record */
-    if(apxc_buf_size < sizeof(struct darshan_apxc_header_record) + sizeof(struct darshan_apxc_perf_record))
-    {
-        darshan_core_unregister_module(APXC_MOD);
-        APXC_UNLOCK();
-        return;
-    }
 
     /* initialize module's global state */
     apxc_runtime = malloc(sizeof(*apxc_runtime));
     if(!apxc_runtime)
     {
-        darshan_core_unregister_module(APXC_MOD);
+        darshan_core_unregister_module(DARSHAN_APXC_MOD);
         APXC_UNLOCK();
         return;
     }
@@ -206,12 +199,12 @@ void apxc_runtime_initialize()
             apxc_runtime->header_id,
             //NULL,
             "darshan-apxc-header",
-            APXC_MOD,
+            DARSHAN_APXC_MOD,
             sizeof(struct darshan_apxc_header_record),
             NULL);
         if(!(apxc_runtime->header_record))
         {
-            darshan_core_unregister_module(APXC_MOD);
+            darshan_core_unregister_module(DARSHAN_APXC_MOD);
             free(apxc_runtime);
             apxc_runtime = NULL;
             APXC_UNLOCK();
@@ -236,12 +229,12 @@ void apxc_runtime_initialize()
         //NULL,
         "APXC",   // we want the record for each rank to be treated as shared records so that mpi_redux can operate on
         //rtr_rec_name,
-        APXC_MOD,
+        DARSHAN_APXC_MOD,
         sizeof(struct darshan_apxc_perf_record),
         NULL);
     if(!(apxc_runtime->perf_record))
     {
-        darshan_core_unregister_module(APXC_MOD);
+        darshan_core_unregister_module(DARSHAN_APXC_MOD);
         free(apxc_runtime);
         apxc_runtime = NULL;
         APXC_UNLOCK();
@@ -405,7 +398,7 @@ static void apxc_mpi_redux(
         {
             apxc_runtime->perf_record->counters[i] /= router_count;
         }
-            apxc_runtime->perf_record->marked = -1;
+            apxc_runtime->perf_record_marked = -1;
     }
     PMPI_Comm_free(&router_comm);
 
@@ -429,7 +422,7 @@ static void apxc_shutdown(
         *apxc_buf_sz += sizeof(*apxc_runtime->header_record); 
     }
     
-    if (apxc_runtime->perf_record->marked == -1) 
+    if (apxc_runtime->perf_record_marked == -1) 
      { 
        *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
      }

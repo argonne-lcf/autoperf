@@ -57,8 +57,16 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     int ret = -1;
     static int first_rec = 1;
 
-    if(fd->mod_map[APXC_MOD].len == 0)
+    if(fd->mod_map[DARSHAN_APXC_MOD].len == 0)
         return(0);
+
+    if(fd->mod_ver[DARSHAN_APXC_MOD] == 0 ||
+        fd->mod_ver[DARSHAN_APXC_MOD] > APXC_VER)
+    {
+        fprintf(stderr, "Error: Invalid APXC module version number (got %d)\n",
+            fd->mod_ver[DARSHAN_APXC_MOD]);
+        return(-1);
+    }
 
     if (!*buf_p)
     {
@@ -74,21 +82,13 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
         buffer = *buf_p;
     }
 
-    if (fd->mod_ver[APXC_MOD] == 0)
-    {
-        printf("Either unknown or debug version: %d\n",
-               fd->mod_ver[APXC_MOD]);
-        return(0);
-    }
-
-    if ((fd->mod_ver[APXC_MOD] > 0) &&
-        (fd->mod_ver[APXC_MOD] < APXC_VER))
+    if (fd->mod_ver[DARSHAN_APXC_MOD] < APXC_VER)
     {
         /* perform conversion as needed */
     }
 
     /* v1, current version */
-    if (fd->mod_ver[APXC_MOD] == APXC_VER)
+    if (fd->mod_ver[DARSHAN_APXC_MOD] == APXC_VER)
     {
         if (first_rec)
         {
@@ -98,7 +98,7 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
         else
             rec_len = sizeof(struct darshan_apxc_perf_record);
 
-        ret = darshan_log_get_mod(fd, APXC_MOD, buffer, rec_len);
+        ret = darshan_log_get_mod(fd, DARSHAN_APXC_MOD, buffer, rec_len);
     }
 
     if (ret == rec_len)
@@ -141,12 +141,14 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
     {
      //*buf_p = NULL;
      //  if (buffer) free(buffer);
+        if (!*buf_p) free(buffer);
         return(-1);
     }
     else
     {
      //  *buf_p = NULL;
      //  if (buffer) free(buffer);
+        if (!*buf_p) free(buffer);
         return(0);
     }
 }
@@ -165,7 +167,7 @@ static int darshan_log_put_apxc_rec(darshan_fd fd, void* buf)
     else
         rec_len = sizeof(struct darshan_apxc_perf_record);
     
-    ret = darshan_log_put_mod(fd, APXC_MOD, buf,
+    ret = darshan_log_put_mod(fd, DARSHAN_APXC_MOD, buf,
                               rec_len, APXC_VER);
     if(ret < 0)
         return(-1);
@@ -185,28 +187,28 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
     { 
 
         hdr_rec = rec;
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "groups", hdr_rec->ngroups, "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "chassis", hdr_rec->nchassis, "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "blades", hdr_rec->nblades, "", "", "");
-        DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "memory_mode", apxc_mmodes[hdr_rec->memory_mode & ~(1<<31)], "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "memory_mode_consistent", ((hdr_rec->memory_mode & (1<<31)) == 0), "", "", "");
-        DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "cluster_mode", apxc_cmodes[hdr_rec->cluster_mode & ~(1<<31)], "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "cluster_mode_consistent", ((hdr_rec->cluster_mode & (1<<31)) == 0), "", "", "");
-        DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
             "application_id", hdr_rec->appid, "", "", "");
         first_rec = 0;
@@ -215,22 +217,22 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
     {
         prf_rec = rec;
         
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
             "GROUP", prf_rec->group, "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
             "CHASSIS", prf_rec->chassis, "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
             "BLADE", prf_rec->blade, "", "", "");
-        DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+        DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
             "NODE", prf_rec->node, "", "", "");
 
         for(i = 0; i < APXC_NUM_INDICES; i++)
         {
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec->base_rec.rank, prf_rec->base_rec.id,
                 apxc_counter_names[i], prf_rec->counters[i],
                 "", "", "");
@@ -280,68 +282,68 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
         if (!hdr_rec2)
         {
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "groups", hdr_rec1->ngroups, "", "", "");
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "chassis", hdr_rec1->nchassis, "", "", "");
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "blades", hdr_rec1->nblades, "", "", "");
             printf("- ");
-            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "memory_mode", apxc_mmodes[hdr_rec1->memory_mode & ~(1<<31)], "", "", "");
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
             "memory_mode_consistent", ((hdr_rec1->memory_mode & (1<<31)) == 0), "", "", "");
             printf("- ");
-            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "cluster_mode", apxc_cmodes[hdr_rec1->cluster_mode & ~(1<<31)], "", "", "");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "cluster_mode_consistent", ((hdr_rec1->cluster_mode & (1<<31)) == 0), "", "", "");
             printf("- ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "appid", hdr_rec1->appid, "", "", "");
         }
         else if (!hdr_rec1)
         {
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "groups", hdr_rec2->ngroups, "", "", "");
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "chassis", hdr_rec2->nchassis, "", "", "");
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "blades", hdr_rec2->nblades, "", "", "");
             printf("+ ");
-            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "memory_mode", apxc_mmodes[hdr_rec2->memory_mode & ~(1<<31)], "", "", "");
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
             "memory_mode_consistent", ((hdr_rec2->memory_mode & (1<<31)) == 0), "", "", "");
             printf("+ ");
-            DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "cluster_mode", apxc_cmodes[hdr_rec2->cluster_mode & ~(1<<31)], "", "", "");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "cluster_mode_consistent", ((hdr_rec2->cluster_mode & (1<<31)) == 0), "", "", "");
             printf("+ ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "appid", hdr_rec2->appid, "", "", "");
         }
@@ -350,34 +352,34 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             if (hdr_rec1->ngroups != hdr_rec2->ngroups)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "groups", hdr_rec1->ngroups, "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "groups", hdr_rec2->ngroups, "", "", "");
             }
             if (hdr_rec1->nchassis != hdr_rec2->nchassis)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "chassis", hdr_rec1->nchassis, "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "chassis", hdr_rec2->nchassis, "", "", "");
             }
             if (hdr_rec1->nblades != hdr_rec2->nblades)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "blades", hdr_rec1->nblades, "", "", "");
 
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "blades", hdr_rec2->nblades, "", "", "");
             }
@@ -385,11 +387,11 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
                 (hdr_rec2->memory_mode &  ~(1<<31)))
             {
                 printf("- ");
-                DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "memory_mode", apxc_mmodes[hdr_rec1->memory_mode & ~(1<<31)], "", "", "");
                 printf("+ ");
-                DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "memory_mode", apxc_mmodes[hdr_rec2->memory_mode & ~(1<<31)], "", "", "");
             }
@@ -397,11 +399,11 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
                 (hdr_rec2->memory_mode & (1<<31)))
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "memory_mode_consistent", ((hdr_rec1->memory_mode & (1<<31)) == 0), "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "memory_mode_consistent", ((hdr_rec2->memory_mode & (1<<31)) == 0), "", "", "");
             }
@@ -409,11 +411,11 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
                 (hdr_rec2->cluster_mode & ~(1<<31)))
             {
                 printf("- ");
-                DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "cluster_mode", apxc_cmodes[hdr_rec1->cluster_mode & ~(1<<31)], "", "", "");
                 printf("+ ");
-                DARSHAN_S_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "cluster_mode", apxc_cmodes[hdr_rec2->cluster_mode & ~(1<<31)], "", "", "");
             }
@@ -421,23 +423,23 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
                 (hdr_rec2->cluster_mode & (1<<31)))
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "cluster_mode_consistent", ((hdr_rec1->cluster_mode & (1<<31)) == 0), "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "cluster_mode_consistent", ((hdr_rec2->cluster_mode & (1<<31)) == 0), "", "", "");
             }
             if (hdr_rec1->appid != hdr_rec2->appid)
             {
                 printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
                 "application_id", hdr_rec1->appid, "", "", "");
 
                 printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
                 "application_id", hdr_rec2->appid, "", "", "");
             }
@@ -448,38 +450,38 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
         if (!prf_rec2)
         {
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                     "GROUP", prf_rec1->group, "", "", "");
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                     "CHASSIS", prf_rec1->chassis, "", "", "");
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                     "BLADE", prf_rec1->blade, "", "", "");
             printf("- ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                     "NODE", prf_rec1->node, "", "", "");
         }
         else if (!prf_rec1)
         {
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                     "GROUP", prf_rec2->group, "", "", "");
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                     "CHASSIS", prf_rec2->chassis, "", "", "");
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                     "BLADE", prf_rec2->blade, "", "", "");
             printf("+ ");
-            DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+            DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                     "NODE", prf_rec2->node, "", "", "");
         }
@@ -487,44 +489,44 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             if (prf_rec1->group != prf_rec2->group)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                         "GROUP", prf_rec1->group, "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                         "GROUP", prf_rec2->group, "", "", "");
             }
             if (prf_rec1->chassis != prf_rec2->chassis)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                         "CHASSIS", prf_rec1->chassis, "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                         "CHASSIS", prf_rec2->chassis, "", "", "");
             }
             if (prf_rec1->blade != prf_rec2->blade)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                         "BLADE", prf_rec1->blade, "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                         "BLADE", prf_rec2->blade, "", "", "");
             }
             if (prf_rec1->node != prf_rec2->node)
             {
                 printf("- ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                         "NODE", prf_rec1->node, "", "", "");
                 printf("+ ");
-                DARSHAN_I_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                         "NODE", prf_rec2->node, "", "", "");
             }
@@ -537,7 +539,7 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             if (!prf_rec2)
             {
                 printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                 apxc_counter_names[i], prf_rec1->counters[i],
                 "", "", "");
@@ -545,7 +547,7 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             else if (!prf_rec1)
             {
                 printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                 apxc_counter_names[i], prf_rec2->counters[i],
                 "", "", "");
@@ -553,13 +555,13 @@ static void darshan_log_print_apxc_rec_diff(void *file_rec1, char *file_name1,
             else if (prf_rec1->counters[i] != prf_rec2->counters[i])
             {
                 printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                 apxc_counter_names[i], prf_rec1->counters[i],
                 "", "", "");
 
                 printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[APXC_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
                 prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                 apxc_counter_names[i], prf_rec2->counters[i],
                 "", "", "");
