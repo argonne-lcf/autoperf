@@ -215,12 +215,12 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
         hdr_rec = rec;
         DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpitime,
+            "MPI_TOTAL_COMM_TIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpitime,
             "", "", "");
         if(hdr_rec->sync_flag)
         DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpisynctime,
+            "MPI_TOTAL_COMM_SYNC_TIME_VARIANCE", hdr_rec->apmpi_f_variance_total_mpisynctime,
             "", "", "");
         first_rec = 0;
         sync_flag = hdr_rec->sync_flag;
@@ -231,7 +231,7 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
 
         DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                   prf_rec->base_rec.rank, prf_rec->base_rec.id,
-                  "nodeid", prf_rec->node_name,
+                  "MPI_PROCESSOR_NAME", prf_rec->node_name,
                   "", "", "");
    
         for(i = 0; i < APMPI_NUM_INDICES; i++)
@@ -275,10 +275,30 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
 static void darshan_log_print_apmpi_description(int ver)
 {
     printf("\n# description of APMPI counters: %d\n", ver);
-    //printf("#     node:    node connected to this router\n");
-    //printf("#     AR_RTR_x_y_INQ_PRF_INCOMING_FLIT_VC[0-7]: flits on VCz of x y tile\n");
-    //printf("#     AR_RTR_x_y_INQ_PRF_ROWBUS_STALL_CNT: stalls on x y tile\n");
-
+    printf("#   global summary stats showing the variance across all the MPI processes.\n");
+    printf("#   MPI_TOTAL_COMM_TIME_VARIANCE: variance in total communication time across all the processes.\n");
+    printf("#   MPI_TOTAL_COMM_SYNC_TIME_VARIANCE: variance in total sync time across all the processes.\n");
+    printf("#   per-process summary stats based on the MPI op instrumented counters.\n");
+    printf("#   MPI_PROCESSOR_NAME: name of the processor used by the MPI process.\n");
+    printf("#   MPI_TOTAL_COMM_TIME: total communication (MPI) time of a process across all the MPI ops.\n");
+    printf("#   MPI_TOTAL_COMM_SYNC_TIME: total sync time of a process across all the MPI ops.\n");
+    printf("#   APMPI_*: MPI operation counts.\n");
+    printf("#   Blocking Point-to-point, Nonblocking Point-to-point, Misc MPI operations.\n");
+    printf("#   Blocking Collective, Nonblocking Collective and RMA opeations are instrumented.\n");
+    printf("#   Total MPI operations instrumented in this release: 74.\n");
+    printf("#   The following counters (as applicable) are reported for each instrumented operation.\n");
+    printf("#   CALL_COUNT: total call count for an MPI operation.\n");
+    printf("#   TOTAL_BYTES: total bytes (cumulative across all calls of an op) used with an MPI op.\n");
+    printf("#   MSG_SIZE_AGG_0_256: total bytes for all the calls of an MPI op with message size range [0, 256B].\n");
+    printf("#   MSG_SIZE_AGG_256_1K: total bytes for all the calls of an MPI op with message size range (256B, 1KB].\n");
+    printf("#   MSG_SIZE_AGG_1K_8K: total bytes for all the calls of an MPI op with message size range (1KB, 8KB].\n");
+    printf("#   MSG_SIZE_AGG_8K_256K: total bytes for all the calls of an MPI op with message size range (8KB, 256KB].\n");
+    printf("#   MSG_SIZE_AGG_256K_1M: total bytes for all the calls of an MPI op with message size range (256KB, 1MB].\n");
+    printf("#   MSG_SIZE_AGG_1M_PLUS: total bytes for all the calls of an MPI op with message size greater than 1MB.\n");
+    printf("#   TOTAL_TIME: total time (cumulative across all calls of an op) of an MPI op.\n");
+    printf("#   MIN_TIME: maximum time across all calls of an MPI op.\n");
+    printf("#   MAX_TIME: minimum time across all calls of an MPI op.\n");
+    printf("#   TOTAL_SYNC_TIME: total sync time (cumulative across all calls of an op) of an MPI op.\n");
     return;
 }
 
@@ -305,12 +325,12 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
             printf("- ");   
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
+                "MPI_TOTAL_COMM_TIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
                 "", "", "");
             if(sync_flag)
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
+                "MPI_TOTAL_COMM_SYNC_TIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
                 "", "", "");
         }
         else if (!hdr_rec1)
@@ -318,12 +338,12 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
             printf("+ ");
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
+                "MPI_TOTAL_COMM_TIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
                 "", "", "");
             if(sync_flag)
             DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
+                "MPI_TOTAL_COMM_SYNC_TIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
                 "", "", "");
         }
         else
@@ -333,12 +353,12 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 printf("- ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                     hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                    "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
+                    "MPI_TOTAL_COMM_TIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpitime,
                     "", "", "");
                 printf("+ ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                     hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                    "RANKS_TOTAL_MPITIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
+                    "MPI_TOTAL_COMM_TIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpitime,
                     "", "", "");
             }
             if(sync_flag)
@@ -348,12 +368,12 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
                 printf("- ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                     hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                    "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
+                    "MPI_TOTAL_COMM_SYNC_TIME_VARIANCE", hdr_rec1->apmpi_f_variance_total_mpisynctime,
                     "", "", "");
                 printf("+ ");
                 DARSHAN_F_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                     hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                    "RANKS_TOTAL_MPISYNCTIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
+                    "MPI_TOTAL_COMM_SYNC_TIME_VARIANCE", hdr_rec2->apmpi_f_variance_total_mpisynctime,
                     "", "", "");
             }
             }
@@ -366,7 +386,7 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
             printf("- ");
             DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                   prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                  "nodeid", prf_rec1->node_name,
+                  "MPI_PROCESSOR_NAME", prf_rec1->node_name,
                   "", "", "");
         }
         else if (!prf_rec1)
@@ -374,7 +394,7 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
             printf("+ ");
             DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                   prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                  "nodeid", prf_rec2->node_name,
+                  "MPI_PROCESSOR_NAME", prf_rec2->node_name,
                   "", "", "");
         }
         else if (prf_rec1->node_name != prf_rec2->node_name)
@@ -382,12 +402,12 @@ static void darshan_log_print_apmpi_rec_diff(void *file_rec1, char *file_name1,
             printf("- ");
             DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                   prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                  "nodeid", prf_rec1->node_name,
+                  "MPI_PROCESSOR_NAME", prf_rec1->node_name,
                   "", "", "");
             printf("+ ");
             DARSHAN_S_COUNTER_PRINT(darshan_module_names[DARSHAN_APMPI_MOD],
                   prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                  "nodeid", prf_rec2->node_name,
+                  "MPI_PROCESSOR_NAME", prf_rec2->node_name,
                   "", "", "");
         }
         int i;
