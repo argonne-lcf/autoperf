@@ -404,7 +404,6 @@ static void apmpi_runtime_initialize()
 #else
         apmpi_runtime->header_record->sync_flag = 0;
 #endif
-        apmpi_runtime->header_record->version = APMPI_VER;
     }
 
     apmpi_runtime->rec_id = darshan_core_gen_record_id("APMPI"); //record name

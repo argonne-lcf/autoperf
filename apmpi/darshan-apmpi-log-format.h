@@ -238,7 +238,6 @@ struct darshan_apmpi_header_record
 {
     struct darshan_base_record base_rec;
     int64_t magic;
-    uint32_t version;
     uint32_t sync_flag;
     double apmpi_f_variance_total_mpitime;
     double apmpi_f_variance_total_mpisynctime;
