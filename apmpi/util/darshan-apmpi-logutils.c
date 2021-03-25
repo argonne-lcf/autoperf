@@ -134,7 +134,6 @@ static int darshan_log_get_apmpi_rec(darshan_fd fd, void** buf_p)
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.id));
                 DARSHAN_BSWAP64(&(hdr_rec->base_rec.rank));
                 DARSHAN_BSWAP64(&(hdr_rec->magic));
-                DARSHAN_BSWAP32(&(hdr_rec->version));
                 DARSHAN_BSWAP32(&(hdr_rec->sync_flag));
                 DARSHAN_BSWAP64(&(hdr_rec->apmpi_f_variance_total_mpitime));
                 DARSHAN_BSWAP64(&(hdr_rec->apmpi_f_variance_total_mpisynctime));
