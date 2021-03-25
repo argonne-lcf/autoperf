@@ -18,6 +18,3 @@ lib/darshan-apxc.o: lib/darshan-apxc.c lib/darshan-apxc-utils.h darshan.h darsha
 
 lib/darshan-apxc.po: lib/darshan-apxc.c lib/darshan-apxc-utils.h darshan.h darshan-dynamic.h darshan-common.h $(DARSHAN_LOG_FORMAT) darshan-apxc-log-format.h | lib
 	$(CC) $(CFLAGS_SHARED) -c $< -o $@
-
-print-apxc-size: print-apxc-size.c $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/apxc/darshan-apxc-log-format.h
-	$(CC) $(CFLAGS) -g -O0 -o $@ $<

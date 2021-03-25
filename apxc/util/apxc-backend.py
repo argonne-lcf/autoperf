@@ -9,22 +9,21 @@ structdefs = '''
 struct darshan_apxc_perf_record
 {
     struct darshan_base_record base_rec;
-    int group;
-    int chassis; 
-    int blade; 
-    int node;
-    int marked;
+    int64_t group;
+    int64_t chassis; 
+    int64_t blade; 
+    int64_t node;
     uint64_t counters[392];
 };
 struct darshan_apxc_header_record
 {
     struct darshan_base_record base_rec;
     int64_t magic;
-    int nblades;
-    int nchassis;
-    int ngroups;
-    int memory_mode;
-    int cluster_mode;
+    int64_t nblades;
+    int64_t nchassis;
+    int64_t ngroups;
+    int64_t memory_mode;
+    int64_t cluster_mode;
     uint64_t appid;
 };
 
