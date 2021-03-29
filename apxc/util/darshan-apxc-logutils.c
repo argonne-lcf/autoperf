@@ -260,7 +260,7 @@ static void darshan_log_print_apxc_description(int ver)
     printf("#     APXC_CLUSTER_MODE_CONSISTENT: Intel Xeon cluster mode consistent across all nodes\n");
     printf("#   per-router statistics for the APXC module:\n");
     printf("#     APXC_GROUP:   group this router is on\n");
-    printf("#     APXC_CHASSIS: chassies this router is on\n");
+    printf("#     APXC_CHASSIS: chassis this router is on\n");
     printf("#     APXC_BLADE:   blade this router is on\n");
     printf("#     APXC_NODE:    node connected to this router\n");
     printf("#     APXC_AR_RTR_* port counters for the 40 router-router ports\n");
