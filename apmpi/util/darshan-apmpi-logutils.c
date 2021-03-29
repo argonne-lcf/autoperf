@@ -273,31 +273,21 @@ static void darshan_log_print_apmpi_rec(void *rec, char *file_name,
 
 static void darshan_log_print_apmpi_description(int ver)
 {
-    printf("\n# description of APMPI counters: %d\n", ver);
-    printf("#   global summary stats showing the variance across all the MPI processes.\n");
-    printf("#   MPI_TOTAL_COMM_TIME_VARIANCE: variance in total communication time across all the processes.\n");
-    printf("#   MPI_TOTAL_COMM_SYNC_TIME_VARIANCE: variance in total sync time across all the processes.\n");
-    printf("#   per-process summary stats based on the MPI op instrumented counters.\n");
-    printf("#   MPI_PROCESSOR_NAME: name of the processor used by the MPI process.\n");
-    printf("#   MPI_TOTAL_COMM_TIME: total communication (MPI) time of a process across all the MPI ops.\n");
-    printf("#   MPI_TOTAL_COMM_SYNC_TIME: total sync time of a process across all the MPI ops.\n");
-    printf("#   APMPI_*: MPI operation counts.\n");
-    printf("#   Blocking Point-to-point, Nonblocking Point-to-point, Misc MPI operations.\n");
-    printf("#   Blocking Collective, Nonblocking Collective and RMA opeations are instrumented.\n");
-    printf("#   Total MPI operations instrumented in this release: 74.\n");
-    printf("#   The following counters (as applicable) are reported for each instrumented operation.\n");
-    printf("#   CALL_COUNT: total call count for an MPI operation.\n");
-    printf("#   TOTAL_BYTES: total bytes (cumulative across all calls of an op) used with an MPI op.\n");
-    printf("#   MSG_SIZE_AGG_0_256: total bytes for all the calls of an MPI op with message size range [0, 256B].\n");
-    printf("#   MSG_SIZE_AGG_256_1K: total bytes for all the calls of an MPI op with message size range (256B, 1KB].\n");
-    printf("#   MSG_SIZE_AGG_1K_8K: total bytes for all the calls of an MPI op with message size range (1KB, 8KB].\n");
-    printf("#   MSG_SIZE_AGG_8K_256K: total bytes for all the calls of an MPI op with message size range (8KB, 256KB].\n");
-    printf("#   MSG_SIZE_AGG_256K_1M: total bytes for all the calls of an MPI op with message size range (256KB, 1MB].\n");
-    printf("#   MSG_SIZE_AGG_1M_PLUS: total bytes for all the calls of an MPI op with message size greater than 1MB.\n");
-    printf("#   TOTAL_TIME: total time (cumulative across all calls of an op) of an MPI op.\n");
-    printf("#   MIN_TIME: maximum time across all calls of an MPI op.\n");
-    printf("#   MAX_TIME: minimum time across all calls of an MPI op.\n");
-    printf("#   TOTAL_SYNC_TIME: total sync time (cumulative across all calls of an op) of an MPI op.\n");
+    printf("\n# description of APMPI counters:\n");
+    printf("#   global summary stats showing the variance across all MPI processes:\n");
+    printf("#     MPI_TOTAL_COMM_TIME_VARIANCE: variance in total communication time across all the processes.\n");
+    printf("#     MPI_TOTAL_COMM_SYNC_TIME_VARIANCE: variance in total sync time across all the processes, if enabled.\n");
+    printf("#   per-process detailed stats on the usage of various MPI routines:\n");
+    printf("#     MPI_PROCESSOR_NAME: name of the processor used by the MPI process.\n");
+    printf("#     MPI_*_CALL_COUNT: total call count for an MPI op.\n");
+    printf("#     MPI_*_TOTAL_BYTES: total bytes (i.e., cumulative across all calls) moved with an MPI op.\n");
+    printf("#     MPI_*_MSG_SIZE_AGG_*: histogram of total bytes moved for all the calls of an MPI op.\n");
+    printf("#     MPI_*_TOTAL_TIME: total time (i.e, cumulative across all calls) of an MPI op.\n");
+    printf("#     MPI_*_MIN_TIME: minimum time across all calls of an MPI op.\n");
+    printf("#     MPI_*_MAX_TIME: maximum time across all calls of an MPI op.\n");
+    printf("#     MPI_*_TOTAL_SYNC_TIME: total sync time (cumulative across all calls of an op) of an MPI op, if enabled.\n");
+    printf("#     MPI_TOTAL_COMM_TIME: total communication (MPI) time of a process across all the MPI ops.\n");
+    printf("#     MPI_TOTAL_COMM_SYNC_TIME: total sync time of a process across all the MPI ops, if enabled.\n");
     return;
 }
 
