@@ -249,24 +249,25 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
 
 static void darshan_log_print_apxc_description(int ver)
 {
-    printf("\n# description of APXC counters: %d\n", ver);
-    printf("#   APXC_GROUPS: total number of groups\n");
-    printf("#   APXC_CHASSIS: total number of chassis\n");
-    printf("#   APXC_BLADES: total number of blades\n");
-    printf("#   APXC_MEMORY_MODE: Intel Xeon memory mode\n");
-    printf("#   APXC_CLUSTER_MODE: Intel Xeon NUMA configuration\n");
-    printf("#   APXC_MEMORY_MODE_CONSISTENT: Intel Xeon memory mode consistent across all nodes\n");
-    printf("#   APXC_CLUSTER_MODE_CONSISTENT: Intel Xeon cluster mode consistent across all nodes\n");
-    printf("#   ROUTER:\n");
+    printf("\n# description of APXC counters:\n");
+    printf("#   global summary stats for the APXC module:\n");
+    printf("#     APXC_GROUPS: total number of groups\n");
+    printf("#     APXC_CHASSIS: total number of chassis\n");
+    printf("#     APXC_BLADES: total number of blades\n");
+    printf("#     APXC_MEMORY_MODE: Intel Xeon memory mode\n");
+    printf("#     APXC_CLUSTER_MODE: Intel Xeon NUMA configuration\n");
+    printf("#     APXC_MEMORY_MODE_CONSISTENT: Intel Xeon memory mode consistent across all nodes\n");
+    printf("#     APXC_CLUSTER_MODE_CONSISTENT: Intel Xeon cluster mode consistent across all nodes\n");
+    printf("#   per-router statistics for the APXC module:\n");
     printf("#     APXC_GROUP:   group this router is on\n");
     printf("#     APXC_CHASSIS: chassies this router is on\n");
     printf("#     APXC_BLADE:   blade this router is on\n");
     printf("#     APXC_NODE:    node connected to this router\n");
-    printf("#     APXC_ROUTER port counters for the 40 router-router ports\n");
+    printf("#     APXC_AR_RTR_* port counters for the 40 router-router ports\n");
     printf("#     APXC_AR_RTR_x_y_INQ_PRF_INCOMING_FLIT_VC[0-7]: flits on VCs of x y tile\n");
     printf("#     APXC_AR_RTR_x_y_INQ_PRF_ROWBUS_STALL_CNT: stalls on x y tile\n");
-    printf("#     APXC_ROUTER port counters for the 8 router-nic ports\n");
-    printf("#     APXC_AR_RTR_PT_x_y_INQ_PRF_INCOMING_FLIT_VC[0,4]: flits on VC of x y tile\n");
+    printf("#     APXC_AR_RTR_PT_* port counters for the 8 router-nic ports\n");
+    printf("#     APXC_AR_RTR_PT_x_y_INQ_PRF_INCOMING_FLIT_VC[0,4]: flits on VCs of x y tile\n");
     printf("#     APXC_AR_RTR_PT_x_y_INQ_PRF_REQ_ROWBUS_STALL_CNT: stalls on x y tile\n"); 
 
     return;
