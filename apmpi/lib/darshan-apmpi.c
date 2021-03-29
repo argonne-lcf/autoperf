@@ -31,6 +31,7 @@ typedef long long ap_bytes_t;
 #define TIME_SYNC(FUNC) \
           double tm1, tm2, tm3, tdiff, tsync;\
           int ret; \
+          MAP_OR_FAIL(PMPI_Barrier);\
           tm1 = darshan_core_wtime(); \
           ret = __real_PMPI_Barrier(comm); \
           tm2 = darshan_core_wtime(); \
