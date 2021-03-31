@@ -147,7 +147,7 @@ static void capture(struct darshan_apxc_perf_record *rec,
 
 void apxc_runtime_initialize()
 {
-    int apxc_buf_size;
+    size_t apxc_buf_size;
     char rtr_rec_name[128];
 
     darshan_module_funcs mod_funcs = {
