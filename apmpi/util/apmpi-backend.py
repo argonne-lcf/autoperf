@@ -36,16 +36,16 @@ def get_apmpi_defs():
 
 
 # load header record
-def log_get_apmpi_record(log, mod_type, dtype='dict'):
-    from darshan.backend.cffi_backend import ffi, libdutil, log_get_modules, counter_names
+def log_get_apmpi_record(log, mod_name, structname, dtype='dict'):
+    from darshan.backend.cffi_backend import ffi, libdutil, log_get_modules, counter_names, _structdefs
 
-    mod_name = 'APMPI'
     modules = log_get_modules(log)
-
 
     rec = {}
     buf = ffi.new("void **")
     r = libdutil.darshan_log_get_record(log['handle'], modules[mod_name]['idx'], buf)
+    mod_type = _structdefs[mod_name+"-"+structname]
+
     if r < 1:
         return None
 
