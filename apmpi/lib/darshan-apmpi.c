@@ -337,7 +337,7 @@ static void capture(struct darshan_apmpi_perf_record *rec,
 
 static void apmpi_runtime_initialize()
 {
-    int apmpi_buf_size;
+    size_t apmpi_buf_size;
     char rec_name[128];
 
     darshan_module_funcs mod_funcs = {
