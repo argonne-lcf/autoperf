@@ -414,7 +414,7 @@
     X(AR_RTR_PT_5_7_INQ_PRF_REQ_ROWBUS_STALL_CNT) \
     X(AR_RTR_PT_5_7_INQ_PRF_RSP_ROWBUS_STALL_CNT) \
     /* end of counters */\
-    X(APXC_NUM_INDICES)
+    Z(APXC_NUM_INDICES)
 
 #define APXC_MEMORY_MODES \
     X(MM_UNKNOWN) \
@@ -422,7 +422,7 @@
     X(MM_EQUAL) \
     X(MM_SPLIT) \
     X(MM_CACHE) \
-    X(MM_NUM_INDICES) 
+    Z(MM_NUM_INDICES) 
 
 #define APXC_CLUSTER_MODES \
     X(CM_UNKNOWN) \
@@ -431,9 +431,10 @@
     X(CM_HEMI) \
     X(CM_SNC4) \
     X(CM_SNC2) \
-    X(CM_NUM_INDICIES)
+    Z(CM_NUM_INDICIES)
 
 #define X(a) a,
+#define Z(a) a
 /* integer counters for the "APXC" example module */
 enum darshan_apxc_perf_indices
 {
@@ -449,6 +450,7 @@ enum apxc_cluster_modes
 {
     APXC_CLUSTER_MODES
 };
+#undef Z
 #undef X
 
 /* the darshan_apxc_router_record structure encompasses the data/counters
