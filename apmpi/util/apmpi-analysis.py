@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # DarshanUtils for Python for processing APMPI records
+# DarshanUtils for Python for processing APMPI records
 #
-# This notebook gives an overwiew of features provided by the Python bindings for DarshanUtils.
+# This script gives an overview of features provided by the Python bindings for DarshanUtils.
 
 # By default all APMPI module records, metadata, and the name records are loaded when opening a Darshan log:
 
