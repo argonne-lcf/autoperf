@@ -23,6 +23,7 @@
 /* counter name strings for the APXC module */
 #define Y(a) #a,
 #define X(a) Y(APXC_ ## a)
+#define Z(a) #a
 char *apxc_counter_names[] = {
     APXC_PERF_COUNTERS
 };
@@ -32,6 +33,7 @@ char *apxc_counter_names[] = {
 char *apxc_mmodes[] = { APXC_MEMORY_MODES };
 char *apxc_cmodes[] = { APXC_CLUSTER_MODES };
 #undef X
+#undef Z
 
 static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p);
 static int darshan_log_put_apxc_rec(darshan_fd fd, void* buf);
@@ -186,10 +188,9 @@ static void darshan_log_print_apxc_rec(void *rec, char *file_name,
     static int first_rec = 1;
     struct darshan_apxc_header_record *hdr_rec;
     struct darshan_apxc_perf_record *prf_rec;
-
+    
     if (first_rec)
     { 
-
         hdr_rec = rec;
         DARSHAN_I_COUNTER_PRINT(darshan_module_names[DARSHAN_APXC_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
