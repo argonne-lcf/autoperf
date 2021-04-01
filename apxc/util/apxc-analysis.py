@@ -1,34 +1,70 @@
 #!/usr/bin/env python
+# DarshanUtils for Python for processing APXC records
+
+# This script gives an overview of features provided by the Python bindings for DarshanUtils.
+
+# By default all APXC module records, metadata, and the name records are loaded when opening a Darshan log:
+
 import argparse
 import darshan
+import cffi
+import numpy
+import pandas
+import matplotlib
+import matplotlib.pyplot as plt 
+import seaborn as sns 
 
-# base counter names
-cnames = ['MPI_SEND',
-          'MPI_RECV',
-          'MPI_ALLREDUCE']
+#import pprint
+import pandas as pd
+import numpy as np
+import jinja2
+import logging
+
+from darshan.backend.cffi_backend import ffi 
+
+logger = logging.getLogger(__name__)
+from darshan.report import DarshanReport
+import darshan.backend.cffi_backend as backend
+import darshan
+import time
+from matplotlib.backends.backend_pdf import FigureCanvasPdf, PdfPages
+from matplotlib.figure import Figure
+
 
 def main():
-  
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--quiet', dest='quiet', action='store_true', default=False, help='Surpress zero count calls')
-  parser.add_argument('logname', metavar="logname", type=str, nargs=1, help='Logname to parse')
-  args = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--quiet",
+        dest="quiet",
+        action="store_true",
+        default=False,
+        help="Surpress zero count calls",
+    )
+    parser.add_argument(
+        "logname", metavar="logname", type=str, nargs=1, help="Logname to parse"
+    )
+    args = parser.parse_args()
 
-  report = darshan.DarshanReport(args.logname[0], read_all=False)
-  report.info()
+    report = darshan.DarshanReport(args.logname[0], read_all=False)
+    report.info()
+   
+    if "APXC" not in report.modules:
+        print("This log does not contain AutoPerf XC data")
+        return
+    r = report.mod_read_all_apxc_records("APXC")
 
-  if ('APXC' not in report.modules):
-    print ("This log does not contain AutoPerf XC data")
+    report.update_name_records()
+    report.info()
+   
+    #pdf = matplotlib.backends.backend_pdf.PdfPages("apxc_output.pdf")
+
+    header_rec = report.records["APXC"][0]
+    
+    for rec in report.records["APXC"][1:]:
+	# skip the first record which is header record
+        print(rec)
+
     return
 
-  hdr = darshan.backend.cffi_backend.log_get_apxc_record(report.log)
-
-  #print("{:<8}{:<16}{:<10}{:<15}{:<18}{:<10}{:<10}{:<10}{:<10}{:<10}{:<10}\n{}".format(
-  #   "Rank","Call", "Count", "Total Bytes", "Total Time", "0-256", "256-1K", "1K-8K", "8K-256K", "256K-1M", "1M+", "="*120))
-
-  r = darshan.backend.cffi_backend.log_get_apxc_record(report.log)
-  print(r)
-  return
-
 if __name__ == '__main__':
-  main()
+    main()
