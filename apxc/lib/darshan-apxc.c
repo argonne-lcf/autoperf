@@ -27,11 +27,13 @@
  * PAPI_events are defined by the Aries counters listed in the log header.
  */
 #define X(a) #a,
+#define Z(a) #a
 static char* PAPI_events[] =
 {
     APXC_PERF_COUNTERS
 };
 #undef X
+#undef Z
 
 #define MAX_GROUPS (128)
 #define MAX_CHASSIS (MAX_GROUPS*6)
