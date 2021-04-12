@@ -330,7 +330,9 @@ static void capture(struct darshan_apmpi_perf_record *rec,
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
     int name_len;
-    MPI_Get_processor_name(rec->node_name, &name_len);
+    char name[MPI_MAX_PROCESSOR_NAME];
+    MPI_Get_processor_name(name, &name_len);
+    strncpy(rec->node_name, name, (name_len < AP_PROCESSOR_NAME_MAX)? name_len : AP_PROCESSOR_NAME_MAX);
 
     return;
 }
