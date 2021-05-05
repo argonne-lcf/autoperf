@@ -414,8 +414,6 @@ static void apxc_shutdown(
     void **apxc_buf,
     int *apxc_buf_sz)
 {
-    int apxc_rec_count;
-
     APXC_LOCK();
     assert(apxc_runtime);
     *apxc_buf_sz = 0; 
