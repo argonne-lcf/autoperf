@@ -340,7 +340,6 @@ static void capture(struct darshan_apmpi_perf_record *rec,
 static void apmpi_runtime_initialize()
 {
     size_t apmpi_buf_size;
-    char rec_name[128];
 
     darshan_module_funcs mod_funcs = {
 #ifdef HAVE_MPI
@@ -455,7 +454,6 @@ static void apmpi_shared_record_variance(MPI_Comm mod_comm)
 {
     MPI_Datatype var_dt;
     MPI_Op var_op;
-    int i;
     struct darshan_variance_dt *var_send_buf = NULL;
     struct darshan_variance_dt *var_recv_buf = NULL;
 
@@ -530,7 +528,7 @@ static void apmpi_mpi_redux(
     struct darshan_apmpi_perf_record *red_recv_buf = NULL;
     struct darshan_apmpi_perf_record *apmpi_rec_buf = (struct darshan_apmpi_perf_record *)apmpi_buf;
 #endif
-    MPI_Datatype red_type;
+    //MPI_Datatype red_type;
     //MPI_Op red_op;
 
     APMPI_LOCK();
@@ -597,8 +595,6 @@ static void apmpi_shutdown(
     void **apmpi_buf,
     int *apmpi_buf_sz)
 {
-    int apmpi_rec_count;
-
     APMPI_LOCK();
     assert(apmpi_runtime);
     *apmpi_buf_sz = 0;
@@ -780,7 +776,7 @@ int DARSHAN_DECL(MPI_Recv)(void *buf, int count, MPI_Datatype datatype, int sour
 {
     MAP_OR_FAIL(PMPI_Recv);
     TIME(__real_PMPI_Recv(buf, count, datatype, source, tag, comm, status));
-    int count_received, src;
+    int count_received; //, src;
     if (status != MPI_STATUS_IGNORE) {
         PMPI_Get_count(status, datatype, &count_received);
         if (count_received == MPI_UNDEFINED) count_received = count;
