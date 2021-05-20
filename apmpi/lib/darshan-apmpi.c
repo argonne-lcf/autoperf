@@ -282,9 +282,11 @@ static void apmpi_mpi_redux(
     darshan_record_id *shared_recs, 
     int shared_rec_count);
 #endif
-static void apmpi_shutdown(
+static void apmpi_output(
         void **buffer, 
         int *size);
+static void apmpi_cleanup(
+        void);
 
 /* macros for obtaining/releasing the apmpi module lock */
 #define APMPI_LOCK() pthread_mutex_lock(&apmpi_runtime_mutex)
@@ -345,7 +347,8 @@ static void apmpi_runtime_initialize()
 #ifdef HAVE_MPI
         .mod_redux_func = &apmpi_mpi_redux,
 #endif
-        .mod_shutdown_func = &apmpi_shutdown
+        .mod_output_func = &apmpi_output,
+        .mod_cleanup_func = &apmpi_cleanup
         };
 
     APMPI_LOCK();
@@ -591,7 +594,7 @@ static void apmpi_mpi_redux(
 }
 
 //#endif
-static void apmpi_shutdown(
+static void apmpi_output(
     void **apmpi_buf,
     int *apmpi_buf_sz)
 {
@@ -602,6 +605,14 @@ static void apmpi_shutdown(
     *apmpi_buf_sz += sizeof( *apmpi_runtime->header_record);
     }
     *apmpi_buf_sz += sizeof( *apmpi_runtime->perf_record);
+    APMPI_UNLOCK();
+    return;
+}
+
+static void apmpi_cleanup()
+{
+    APMPI_LOCK();
+    assert(apmpi_runtime);
 
     finalize_counters();
     free(apmpi_runtime);
