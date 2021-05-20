@@ -82,9 +82,11 @@ static void apxc_mpi_redux(
     darshan_record_id *shared_recs, 
     int shared_rec_count);
 //#endif
-static void apxc_shutdown(
+static void apxc_output(
         void **buffer, 
         int *size);
+static void apxc_cleanup(
+        void);
 
 /* macros for obtaining/releasing the APXC module lock */
 #define APXC_LOCK() pthread_mutex_lock(&apxc_runtime_mutex)
@@ -156,7 +158,8 @@ void apxc_runtime_initialize()
 //#ifdef HAVE_MPI
         .mod_redux_func = &apxc_mpi_redux,
 //#endif
-        .mod_shutdown_func = &apxc_shutdown
+        .mod_output_func = &apxc_output,
+        .mod_cleanup_func = &apxc_cleanup
         };
 
     APXC_LOCK();
@@ -410,7 +413,7 @@ static void apxc_mpi_redux(
 }
 
 //#endif
-static void apxc_shutdown(
+static void apxc_output(
     void **apxc_buf,
     int *apxc_buf_sz)
 {
@@ -426,10 +429,18 @@ static void apxc_shutdown(
      { 
        *apxc_buf_sz += sizeof( *apxc_runtime->perf_record); 
      }
+
+    APXC_UNLOCK();
+    return;
+}
+
+static void apxc_cleanup()
+{
+    APXC_LOCK();
+    assert(apxc_runtime);
     finalize_counters();
     free(apxc_runtime);
     apxc_runtime = NULL;
-
     APXC_UNLOCK();
     return;
 }
