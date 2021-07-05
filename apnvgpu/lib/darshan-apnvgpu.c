@@ -150,7 +150,7 @@ static int my_rank = -1;
 /* The DARSHAN_DECL macro provides the appropriate wrapper function names,
  * depending on whether the Darshan library is statically or dynamically linked.
  */
-void DARSHAN_DECL(Tau_darshan_export_plugin)(Tau_autoperf_gpu_metric_data *d, double ver)
+void DARSHAN_DECL(__Tau_darshan_export_plugin)()
 {
     ssize_t ret = 0;
 
@@ -166,9 +166,9 @@ void DARSHAN_DECL(Tau_darshan_export_plugin)(Tau_autoperf_gpu_metric_data *d, do
 
     __real_Tau_darshan_export_plugin(data, APNVGPU_VERSION);
 
-    APNVGPU_PRE_RECORD();
+    /*APNVGPU_PRE_RECORD();
     APNVGPU_RECORD_GPU_METRICS(ret, "gpuplugin");
-    APNVGPU_POST_RECORD();
+    APNVGPU_POST_RECORD();*/
 
 }
 
