@@ -27,7 +27,7 @@ typedef struct Tau_autoperf_gpu_metric_data {
 
 #define APNVGPU_VERSION 0.1
 
-DARSHAN_FORWARD_DECL(Tau_darshan_export_plugin, void, (Tau_autoperf_gpu_metric_data *data, double ver));
+DARSHAN_FORWARD_DECL(Tau_darshan_export_plugin, void, (Tau_autoperf_gpu_metric_data **data, double ver));
 
 /* The apnvgpu_record_ref structure maintains necessary runtime metadata
  * for the APNVGPU module record (darshan_apnvgpu_record structure, defined in
@@ -122,7 +122,7 @@ static int my_rank = -1;
 } while(0)
 
 /* macro for gathering NVGPU metrics */
-#define APNVGPU_RECORD_GPU_METRICS(__ret, __name) do{ \
+#define APNVGPU_RECORD_GPU_METRICS(__ret, data, __name) do{ \
     darshan_record_id rec_id; \
     struct apnvgpu_record_ref *rec_ref; \
     /* if bar returns error (return code < 0), don't instrument anything */ \
@@ -132,45 +132,21 @@ static int my_rank = -1;
     /* look up a record reference for this record id using darshan rec_ref interface */ \
     rec_ref = darshan_lookup_record_ref(apnvgpu_runtime->rec_id_hash, &rec_id, sizeof(darshan_record_id)); \
     /* if no reference was found, track a new one for this record */ \
-    if(!rec_ref) rec_ref = apnvgpu_track_new_record(rec_id, __name); \
+    if(!rec_ref) { rec_ref = apnvgpu_track_new_record(rec_id, __name); break; } \
     /* if we still don't have a valid reference, back out */ \
     if(!rec_ref) break; \
     /* record GPU metrics */ \
-    fprintf(stderr, "APNVGPU: Recording metrics.\n");\
     rec_ref->record_p->counters[APNVGPU_CPU_GPU_TRANSFER_SIZE] = data->total_bytes_transferred_HtoD; \
     rec_ref->record_p->counters[APNVGPU_GPU_CPU_TRANSFER_SIZE] = data->total_bytes_transferred_DtoH; \
     rec_ref->record_p->fcounters[APNVGPU_F_CPU_GPU_BIDIRECTIONAL_TRANSFER_TIME] = data->total_memcpy_time; \
     rec_ref->record_p->fcounters[APNVGPU_F_KERNEL_EXECUTION_TIME] = data->total_kernel_exec_time; \
+    fprintf(stderr, "APNVGPU: Done recording metrics.\n"); \
 } while(0)
 
 /**********************************************************
  *    Wrappers for "APNVGPU" module functions of interest    * 
  **********************************************************/
 
-/* The DARSHAN_DECL macro provides the appropriate wrapper function names,
- * depending on whether the Darshan library is statically or dynamically linked.
- */
-void DARSHAN_DECL(__Tau_darshan_export_plugin)()
-{
-    ssize_t ret = 0;
-
-    fprintf(stderr, "APNVGPU: Interposing Tau_darshan_export_plugin.\n");
-
-    /* The MAP_OR_FAIL macro attempts to obtain the address of the actual
-     * underlying bar function call (__real_bar), in the case of LD_PRELOADing
-     * the Darshan library. For statically linked executables, this macro is
-     * just a NOP. 
-     */
-    Tau_autoperf_gpu_metric_data *data = (Tau_autoperf_gpu_metric_data *)malloc(sizeof(Tau_autoperf_gpu_metric_data));
-    MAP_OR_FAIL(Tau_darshan_export_plugin);
-
-    __real_Tau_darshan_export_plugin(data, APNVGPU_VERSION);
-
-    /*APNVGPU_PRE_RECORD();
-    APNVGPU_RECORD_GPU_METRICS(ret, "gpuplugin");
-    APNVGPU_POST_RECORD();*/
-
-}
 
 /**********************************************************
  * Internal functions for manipulating APNVGPU module state *
@@ -215,6 +191,13 @@ void apnvgpu_runtime_initialize()
         return;
     }
     memset(apnvgpu_runtime, 0, sizeof(*apnvgpu_runtime));
+
+    /* Creating a record here */
+    ssize_t ret = 0;
+    Tau_autoperf_gpu_metric_data *data = NULL;
+    APNVGPU_PRE_RECORD();
+    APNVGPU_RECORD_GPU_METRICS(ret, data, "gpuplugin");
+    APNVGPU_POST_RECORD();
 
     return;
 }
@@ -283,7 +266,17 @@ static void apnvgpu_output(
     int *apnvgpu_buf_sz)
 {
 
+    ssize_t ret = 0;
     fprintf(stderr, "APNVGPU: Inside Finalize.\n");
+
+    Tau_autoperf_gpu_metric_data *data = (Tau_autoperf_gpu_metric_data *)calloc(1, sizeof(Tau_autoperf_gpu_metric_data));
+    CUSTOM_MAP_OR_FAIL(Tau_darshan_export_plugin);
+
+    __real_Tau_darshan_export_plugin(&data, APNVGPU_VERSION);
+
+    APNVGPU_PRE_RECORD();
+    APNVGPU_RECORD_GPU_METRICS(ret, data, "gpuplugin");
+    APNVGPU_POST_RECORD();
 
     APNVGPU_LOCK();
     assert(apnvgpu_runtime);
