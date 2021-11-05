@@ -267,7 +267,7 @@ static void apnvgpu_output(
 {
 
     ssize_t ret = 0;
-    fprintf(stderr, "APNVGPU: Inside Finalize.\n");
+    fprintf(stderr, "APNVGPU: Inside finalize.\n");
 
     Tau_autoperf_gpu_metric_data *data = (Tau_autoperf_gpu_metric_data *)calloc(1, sizeof(Tau_autoperf_gpu_metric_data));
     CUSTOM_MAP_OR_FAIL(Tau_darshan_export_plugin);
