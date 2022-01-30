@@ -1,0 +1,27 @@
+# 
+# AutoPerf Make rules for Darshan
+#
+
+VPATH += :$(srcdir)/../modules/autoperf/apnvgpu/util
+
+DARSHAN_MOD_LOG_FORMATS += $(srcdir)/../modules/autoperf/apnvgpu/darshan-apnvgpu-log-format.h
+DARSHAN_MOD_LOGUTIL_HEADERS += darshan-apnvgpu-logutils.h
+DARSHAN_STATIC_MOD_OBJS += darshan-apnvgpu-logutils.o
+DARSHAN_DYNAMIC_MOD_OBJS += darshan-apnvgpu-logutils.po
+
+CFLAGS += \
+          -DDARSHAN_USE_APNVGPU \
+          -I$(srcdir)/../modules/autoperf/apnvgpu \
+          -I$(srcdir)/../modules/autoperf/apnvgpu/util
+
+CFLAGS_SHARED += \
+         -DDARSHAN_USE_APNVGPU \
+         -I$(srcdir)/../modules/autoperf/apnvgpu \
+         -I$(srcdir)/../modules/autoperf/apnvgpu/util
+
+darshan-apnvgpu-logutils.o: darshan-apnvgpu-logutils.c darshan-logutils.h darshan-apnvgpu-logutils.h $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/apnvgpu/darshan-apnvgpu-log-format.h | uthash-1.9.2
+	$(CC) $(CFLAGS) -c  $< -o $@
+
+darshan-apnvgpu-logutils.po: darshan-apnvgpu-logutils.c darshan-logutils.h darshan-apnvgpu-logutils.h $(DARSHAN_LOG_FORMAT) $(srcdir)/../modules/autoperf/apnvgpu/darshan-apnvgpu-log-format.h | uthash-1.9.2
+	$(CC) $(CFLAGS_SHARED) -c  $< -o $@
+
