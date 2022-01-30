@@ -22,6 +22,7 @@
 typedef long long ap_bytes_t;
 #define MAX(x,y) ((x>y)?x:y)
 #define MIN(x,y) ((x==0.0)?y:((x<y)?x:y))
+#define APMPI_WTIME() __darshan_disabled ? 0 : darshan_core_wtime();
 
 #ifdef __APMPI_COLL_SYNC
 
@@ -29,11 +30,11 @@ typedef long long ap_bytes_t;
           double tm1, tm2, tm3, tdiff, tsync;\
           int ret; \
           MAP_OR_FAIL(PMPI_Barrier);\
-          tm1 = darshan_core_wtime(); \
+          tm1 = APMPI_WTIME(); \
           ret = __real_PMPI_Barrier(comm); \
-          tm2 = darshan_core_wtime(); \
+          tm2 = APMPI_WTIME(); \
           ret = FUNC; \
-          tm3 = darshan_core_wtime(); \
+          tm3 = APMPI_WTIME(); \
           tdiff = tm3-tm2; \
           tsync = tm2-tm1
 #else
@@ -41,9 +42,9 @@ typedef long long ap_bytes_t;
 #define TIME_SYNC(FUNC) \
           double tm1, tm2, tdiff, tsync;\
           int ret; \
-          tm1 = darshan_core_wtime(); \
+          tm1 = APMPI_WTIME(); \
           ret = FUNC; \
-          tm2 = darshan_core_wtime(); \
+          tm2 = APMPI_WTIME(); \
           tdiff = tm2-tm1; \
           tsync = 0
 
@@ -51,9 +52,9 @@ typedef long long ap_bytes_t;
 #define TIME(FUNC) \
           double tm1, tm2, tdiff;\
           int ret; \
-          tm1 = darshan_core_wtime(); \
+          tm1 = APMPI_WTIME(); \
           ret = FUNC; \
-          tm2 = darshan_core_wtime(); \
+          tm2 = APMPI_WTIME(); \
           tdiff = tm2-tm1
 
 #define BYTECOUNT(TYPE, COUNT) \
@@ -263,6 +264,7 @@ struct apmpi_runtime
     struct darshan_apmpi_header_record *header_record;
     darshan_record_id rec_id;
     darshan_record_id header_id;
+    int frozen; /* flag to indicate that the counters should no longer be modified */
 };
 
 static struct apmpi_runtime *apmpi_runtime = NULL;
@@ -605,6 +607,9 @@ static void apmpi_output(
     *apmpi_buf_sz += sizeof( *apmpi_runtime->header_record);
     }
     *apmpi_buf_sz += sizeof( *apmpi_runtime->perf_record);
+
+    apmpi_runtime->frozen = 1;
+
     APMPI_UNLOCK();
     return;
 }
@@ -622,15 +627,18 @@ static void apmpi_cleanup()
     return;
 }
 
+/* note that if the break condition is triggered in this macro, then it
+ * will exit the do/while loop holding a lock that will be released in
+ * POST_RECORD().  Otherwise it will release the lock here (if held) and
+ * return immediately without reaching the POST_RECORD() macro.
+ */
 #define APMPI_PRE_RECORD() do { \
-       APMPI_LOCK(); \
-       if(!darshan_core_disabled_instrumentation()) { \
-           if(!apmpi_runtime) { \
-               apmpi_runtime_initialize(); \
-           } \
-           if(apmpi_runtime) break; \
+       if(!__darshan_disabled) { \
+           APMPI_LOCK(); \
+           if(!apmpi_runtime) apmpi_runtime_initialize(); \
+           if(apmpi_runtime && !apmpi_runtime->frozen) break; \
+           APMPI_UNLOCK(); \
        } \
-       APMPI_UNLOCK(); \
        return(ret); \
    } while(0)
 
@@ -2102,9 +2110,9 @@ int DARSHAN_DECL(MPI_ )()
 
     MAP_OR_FAIL(PMPI_ );
 
-    tm1 = darshan_core_wtime();
+    tm1 = APMPI_WTIME();
     ret = __real_PMPI_();
-    tm2 = darshan_core_wtime();
+    tm2 = APMPI_WTIME();
     APMPI_PRE_RECORD();
     apmpi_runtime->perf_record->counters[MPI_ _COUNT]++;
     APMPI_POST_RECORD();
