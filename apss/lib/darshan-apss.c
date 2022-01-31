@@ -220,7 +220,7 @@ void apss_runtime_initialize()
         apss_runtime->header_record->magic = APSS_MAGIC;
     }
 
-    get_xc_coords(&apss_runtime->group,
+    get_ss_coords(&apss_runtime->group,
                   &apss_runtime->chassis,
                   &apss_runtime->blade,
                   &apss_runtime->node);
