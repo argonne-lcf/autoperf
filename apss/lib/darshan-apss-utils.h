@@ -40,7 +40,6 @@ static int sstopo_get_mycoords(int *rack, int *chassis, int *blade, int *node)
 
     char a, b, c, d, e;
     int layer_temp;
-    int rack, chassis, blade, anode;
     /* format example: c1-0c1s2n1 c3-0c2s15n3 */
     /* format example: x3012c0s13b0n0 */
     sscanf(hostname,
