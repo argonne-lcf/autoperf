@@ -36,7 +36,7 @@ static char* PAPI_events[] =
 #undef Z
 
 #define MAX_GROUPS (128)
-#define MAX_CHASSIS (MAX_GROUPS*6)
+#define MAX_CHASSIS (MAX_GROUPS*16)
 #define MAX_BLADES (MAX_CHASSIS*16)
 
 /*
@@ -152,7 +152,7 @@ static void capture(struct darshan_apss_perf_record *rec,
 void apss_runtime_initialize()
 {
     size_t apss_buf_size;
-    char rtr_rec_name[128];
+    //char rtr_rec_name[128];
 
     darshan_module_funcs mod_funcs = {
 //#ifdef HAVE_MPI
@@ -225,8 +225,8 @@ void apss_runtime_initialize()
                   &apss_runtime->blade,
                   &apss_runtime->node);
 
-    sprintf(rtr_rec_name, "darshan-apss-rtr-%d-%d-%d",
-            apss_runtime->group, apss_runtime->chassis, apss_runtime->blade);
+    //sprintf(rtr_rec_name, "darshan-apss-rtr-%d-%d-%d",
+    //       apss_runtime->group, apss_runtime->chassis, apss_runtime->blade);
     //apss_runtime->rtr_id = darshan_core_gen_record_id(rtr_rec_name);
     apss_runtime->rtr_id = darshan_core_gen_record_id("APSS");
     apss_runtime->perf_record = darshan_core_register_record(
@@ -295,7 +295,7 @@ static void apss_mpi_redux(
     {
         apss_runtime->header_record->appid = atoi((char*)getenv( csJOBID_ENV_STR ));
     }
-
+#if 0
     /* count network dimensions */
     if (bitvec)
     {
@@ -346,7 +346,7 @@ static void apss_mpi_redux(
 
         if (my_rank == 0)
         {
-            apss_runtime->header_record->nblades  = router_count;
+            apss_runtime->header_record->nblades = router_count;
             apss_runtime->header_record->nchassis = chassis_count;
             apss_runtime->header_record->ngroups  = group_count;
         }
@@ -354,7 +354,7 @@ static void apss_mpi_redux(
     }
     else
     {
-        apss_runtime->header_record->nblades  = 0;
+        apss_runtime->header_record->nblades = 0;
         apss_runtime->header_record->nchassis = 0;
         apss_runtime->header_record->ngroups  = 0;
     }
@@ -391,7 +391,7 @@ static void apss_mpi_redux(
     PMPI_Comm_free(&router_comm);
 
     APSS_UNLOCK();
-
+#endif
     return;
 }
 
