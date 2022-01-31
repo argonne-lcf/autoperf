@@ -44,16 +44,11 @@ static int sstopo_get_mycoords(int *rack, int *chassis, int *blade, int *node)
     /* format example: x3012c0s13b0n0 */
     sscanf(hostname,
            "%c%d%c%d%c%d%c%d%c%d",
-           &a, &rack, &b, &layer_temp, &c, &chassis, &d, &blade, &e, &anode);
+           &a, &rack, &b, &layer_temp, &c, &chassis, &d, &blade, &e, &node);
 
 #ifdef DEBUG
-    fprintf(stderr, "coords = (%d,%d, %d, %d,%d,%d,%d) \n", layer_rank, blade_rank, node_rank, rack, chassis, blade, anode);
+    fprintf(stderr, "coords = (%d,%d, %d, %d,%d,%d,%d) \n", layer_rank, blade_rank, node_rank, rack, chassis, blade, node);
 #endif
-
-    rack   = rack;
-    chassis  = chassis;
-    blade = blade;
-    node = anode;
 
   return 0;
 }
