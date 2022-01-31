@@ -105,7 +105,7 @@ static void initialize_counters (void)
     PAPI_create_eventset(&apss_runtime->PAPI_event_set);
 
     /* start with first PAPI counter */
-    for (i = AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0;
+    for (i = CQ_CQ_OXE_NUM_STALLS;
          strcmp(PAPI_events[i], "APSS_NUM_INDICES") != 0;
          i++)
     {
@@ -136,7 +136,7 @@ static void capture(struct darshan_apss_perf_record *rec,
                     darshan_record_id rec_id)
 {
     PAPI_stop(apss_runtime->PAPI_event_set,
-          (long long*) &rec->counters[AR_RTR_0_0_INQ_PRF_INCOMING_FLIT_VC0]);
+          (long long*) &rec->counters[CQ_CQ_OXE_NUM_STALLS]);
     PAPI_reset(apss_runtime->PAPI_event_set);
 
     rec->group   = apss_runtime->group;
