@@ -22,10 +22,10 @@
 
 /* counter name strings for the apss module */
 #define Y(a) #a,
-#define X(a) Y(apss_ ## a)
+#define X(a) Y(APSS_ ## a)
 #define Z(a) #a
 char *apss_counter_names[] = {
-    apss_PERF_COUNTERS
+    APSS_PERF_COUNTERS
 };
 #undef Y
 #undef X
@@ -59,14 +59,14 @@ static int darshan_log_get_apss_rec(darshan_fd fd, void** buf_p)
     int ret = -1;
     static int first_rec = 1;
 
-    if(fd->mod_map[DARSHAN_apss_MOD].len == 0)
+    if(fd->mod_map[DARSHAN_APSS_MOD].len == 0)
         return(0);
 
-    if(fd->mod_ver[DARSHAN_apss_MOD] == 0 ||
-        fd->mod_ver[DARSHAN_apss_MOD] > apss_VER)
+    if(fd->mod_ver[DARSHAN_APSS_MOD] == 0 ||
+        fd->mod_ver[DARSHAN_APSS_MOD] > APSS_VER)
     {
-        fprintf(stderr, "Error: Invalid apss module version number (got %d)\n",
-            fd->mod_ver[DARSHAN_apss_MOD]);
+        fprintf(stderr, "Error: Invalid APSS module version number (got %d)\n",
+            fd->mod_ver[DARSHAN_APSS_MOD]);
         return(-1);
     }
 
@@ -84,13 +84,13 @@ static int darshan_log_get_apss_rec(darshan_fd fd, void** buf_p)
         buffer = *buf_p;
     }
 
-    if (fd->mod_ver[DARSHAN_apss_MOD] < apss_VER)
+    if (fd->mod_ver[DARSHAN_APSS_MOD] < APSS_VER)
     {
         /* perform conversion as needed */
     }
 
     /* v1, current version */
-    if (fd->mod_ver[DARSHAN_apss_MOD] == apss_VER)
+    if (fd->mod_ver[DARSHAN_APSS_MOD] == APSS_VER)
     {
         if (first_rec)
         {
@@ -100,7 +100,7 @@ static int darshan_log_get_apss_rec(darshan_fd fd, void** buf_p)
         else
             rec_len = sizeof(struct darshan_apss_perf_record);
 
-        ret = darshan_log_get_mod(fd, DARSHAN_apss_MOD, buffer, rec_len);
+        ret = darshan_log_get_mod(fd, DARSHAN_APSS_MOD, buffer, rec_len);
     }
 
     if (ret == rec_len)
@@ -128,7 +128,7 @@ static int darshan_log_get_apss_rec(darshan_fd fd, void** buf_p)
                 DARSHAN_BSWAP64(&(prf_rec->chassis));
                 DARSHAN_BSWAP64(&(prf_rec->blade));
                 DARSHAN_BSWAP64(&(prf_rec->node));
-                for (i = 0; i < apss_NUM_INDICES; i++)
+                for (i = 0; i < APSS_NUM_INDICES; i++)
                 {
                     DARSHAN_BSWAP64(&prf_rec->counters[i]);
                 }
@@ -167,8 +167,8 @@ static int darshan_log_put_apss_rec(darshan_fd fd, void* buf)
     else
         rec_len = sizeof(struct darshan_apss_perf_record);
     
-    ret = darshan_log_put_mod(fd, DARSHAN_apss_MOD, buf,
-                              rec_len, apss_VER);
+    ret = darshan_log_put_mod(fd, DARSHAN_APSS_MOD, buf,
+                              rec_len, APSS_VER);
     if(ret < 0)
         return(-1);
 
@@ -186,41 +186,41 @@ static void darshan_log_print_apss_rec(void *rec, char *file_name,
     if (first_rec)
     { 
         hdr_rec = rec;
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "apss_GROUPS", hdr_rec->ngroups, "", "", "");
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            "APSS_GROUPS", hdr_rec->ngroups, "", "", "");
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "apss_CHASSIS", hdr_rec->nchassis, "", "", "");
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            "APSS_CHASSIS", hdr_rec->nchassis, "", "", "");
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "apss_BLADES", hdr_rec->nblades, "", "", "");
-        DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            "APSS_BLADES", hdr_rec->nblades, "", "", "");
+        DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             hdr_rec->base_rec.rank, hdr_rec->base_rec.id,
-            "apss_APPLICATION_ID", hdr_rec->appid, "", "", "");
+            "APSS_APPLICATION_ID", hdr_rec->appid, "", "", "");
         first_rec = 0;
     }
     else
     {
         prf_rec = rec;
         
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
-            "apss_GROUP", prf_rec->group, "", "", "");
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            "APSS_GROUP", prf_rec->group, "", "", "");
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
-            "apss_CHASSIS", prf_rec->chassis, "", "", "");
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            "APSS_CHASSIS", prf_rec->chassis, "", "", "");
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
-            "apss_BLADE", prf_rec->blade, "", "", "");
-        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            "APSS_BLADE", prf_rec->blade, "", "", "");
+        DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
             prf_rec->base_rec.rank, prf_rec->base_rec.id,
-            "apss_NODE", prf_rec->node, "", "", "");
+            "APSS_NODE", prf_rec->node, "", "", "");
 
-        for(i = 0; i < apss_NUM_INDICES; i++)
+        for(i = 0; i < APSS_NUM_INDICES; i++)
         {
             
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 prf_rec->base_rec.rank, prf_rec->base_rec.id,
                 apss_counter_names[i], prf_rec->counters[i],
                 "", "", "");
@@ -234,20 +234,20 @@ static void darshan_log_print_apss_description(int ver)
 {
     printf("\n# description of apss counters:\n");
     printf("#   global summary stats for the apss module:\n");
-    printf("#     apss_GROUPS: total number of groups\n");
-    printf("#     apss_CHASSIS: total number of chassis\n");
-    printf("#     apss_BLADES: total number of blades\n");
+    printf("#     APSS_GROUPS: total number of groups\n");
+    printf("#     APSS_CHASSIS: total number of chassis\n");
+    printf("#     APSS_BLADES: total number of blades\n");
     printf("#   per-router statistics for the apss module:\n");
-    printf("#     apss_GROUP:   group this router is on\n");
-    printf("#     apss_CHASSIS: chassis this router is on\n");
-    printf("#     apss_BLADE:   blade this router is on\n");
-    printf("#     apss_NODE:    node connected to this router\n");
-    printf("#     apss_AR_RTR_* port counters for the 40 router-router ports\n");
-    printf("#     apss_AR_RTR_x_y_INQ_PRF_INCOMING_FLIT_VC[0-7]: flits on VCs of x y tile\n");
-    printf("#     apss_AR_RTR_x_y_INQ_PRF_ROWBUS_STALL_CNT: stalls on x y tile\n");
-    printf("#     apss_AR_RTR_PT_* port counters for the 8 router-nic ports\n");
-    printf("#     apss_AR_RTR_PT_x_y_INQ_PRF_INCOMING_FLIT_VC[0,4]: flits on VCs of x y tile\n");
-    printf("#     apss_AR_RTR_PT_x_y_INQ_PRF_REQ_ROWBUS_STALL_CNT: stalls on x y tile\n"); 
+    printf("#     APSS_GROUP:   group this router is on\n");
+    printf("#     APSS_CHASSIS: chassis this router is on\n");
+    printf("#     APSS_BLADE:   blade this router is on\n");
+    printf("#     APSS_NODE:    node connected to this router\n");
+    printf("#     APSS_AR_RTR_* port counters for the 40 router-router ports\n");
+    printf("#     APSS_AR_RTR_x_y_INQ_PRF_INCOMING_FLIT_VC[0-7]: flits on VCs of x y tile\n");
+    printf("#     APSS_AR_RTR_x_y_INQ_PRF_ROWBUS_STALL_CNT: stalls on x y tile\n");
+    printf("#     APSS_AR_RTR_PT_* port counters for the 8 router-nic ports\n");
+    printf("#     APSS_AR_RTR_PT_x_y_INQ_PRF_INCOMING_FLIT_VC[0,4]: flits on VCs of x y tile\n");
+    printf("#     APSS_AR_RTR_PT_x_y_INQ_PRF_REQ_ROWBUS_STALL_CNT: stalls on x y tile\n"); 
 
     return;
 }
@@ -265,94 +265,94 @@ static void darshan_log_print_apss_rec_diff(void *file_rec1, char *file_name1,
     prf_rec1 = (struct darshan_apss_perf_record*) file_rec1;
     prf_rec2 = (struct darshan_apss_perf_record*) file_rec2;
 
-    if (hdr_rec1->magic == apss_MAGIC)
+    if (hdr_rec1->magic == APSS_MAGIC)
     {
         /* this is the header record */
         if (!hdr_rec2)
         {
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_GROUPS", hdr_rec1->ngroups, "", "", "");
+                "APSS_GROUPS", hdr_rec1->ngroups, "", "", "");
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_CHASSIS", hdr_rec1->nchassis, "", "", "");
+                "APSS_CHASSIS", hdr_rec1->nchassis, "", "", "");
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_BLADES", hdr_rec1->nblades, "", "", "");
+                "APSS_BLADES", hdr_rec1->nblades, "", "", "");
             printf("- ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_APPLICATION_ID", hdr_rec1->appid, "", "", "");
+                "APSS_APPLICATION_ID", hdr_rec1->appid, "", "", "");
         }
         else if (!hdr_rec1)
         {
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_GROUPS", hdr_rec2->ngroups, "", "", "");
+                "APSS_GROUPS", hdr_rec2->ngroups, "", "", "");
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_CHASSIS", hdr_rec2->nchassis, "", "", "");
+                "APSS_CHASSIS", hdr_rec2->nchassis, "", "", "");
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_BLADES", hdr_rec2->nblades, "", "", "");
+                "APSS_BLADES", hdr_rec2->nblades, "", "", "");
             printf("+ ");
-            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_APPLICATION_ID", hdr_rec2->appid, "", "", "");
+                "APSS_APPLICATION_ID", hdr_rec2->appid, "", "", "");
         }
         else
         {
             if (hdr_rec1->ngroups != hdr_rec2->ngroups)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_GROUPS", hdr_rec1->ngroups, "", "", "");
+                "APSS_GROUPS", hdr_rec1->ngroups, "", "", "");
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_GROUPS", hdr_rec2->ngroups, "", "", "");
+                "APSS_GROUPS", hdr_rec2->ngroups, "", "", "");
             }
             if (hdr_rec1->nchassis != hdr_rec2->nchassis)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_CHASSIS", hdr_rec1->nchassis, "", "", "");
+                "APSS_CHASSIS", hdr_rec1->nchassis, "", "", "");
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_CHASSIS", hdr_rec2->nchassis, "", "", "");
+                "APSS_CHASSIS", hdr_rec2->nchassis, "", "", "");
             }
             if (hdr_rec1->nblades != hdr_rec2->nblades)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_BLADES", hdr_rec1->nblades, "", "", "");
+                "APSS_BLADES", hdr_rec1->nblades, "", "", "");
 
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_BLADES", hdr_rec2->nblades, "", "", "");
+                "APSS_BLADES", hdr_rec2->nblades, "", "", "");
             }
             if (hdr_rec1->appid != hdr_rec2->appid)
             {
                 printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec1->base_rec.rank, hdr_rec1->base_rec.id,
-                "apss_APPLICATION_ID", hdr_rec1->appid, "", "", "");
+                "APSS_APPLICATION_ID", hdr_rec1->appid, "", "", "");
 
                 printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 hdr_rec2->base_rec.rank, hdr_rec2->base_rec.id,
-                "apss_APPLICATION_ID", hdr_rec2->appid, "", "", "");
+                "APSS_APPLICATION_ID", hdr_rec2->appid, "", "", "");
             }
         }
     }
@@ -361,96 +361,96 @@ static void darshan_log_print_apss_rec_diff(void *file_rec1, char *file_name1,
         if (!prf_rec2)
         {
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                    "apss_GROUP", prf_rec1->group, "", "", "");
+                    "APSS_GROUP", prf_rec1->group, "", "", "");
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                    "apss_CHASSIS", prf_rec1->chassis, "", "", "");
+                    "APSS_CHASSIS", prf_rec1->chassis, "", "", "");
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                    "apss_BLADE", prf_rec1->blade, "", "", "");
+                    "APSS_BLADE", prf_rec1->blade, "", "", "");
             printf("- ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                    "apss_NODE", prf_rec1->node, "", "", "");
+                    "APSS_NODE", prf_rec1->node, "", "", "");
         }
         else if (!prf_rec1)
         {
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                    "apss_GROUP", prf_rec2->group, "", "", "");
+                    "APSS_GROUP", prf_rec2->group, "", "", "");
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                    "apss_CHASSIS", prf_rec2->chassis, "", "", "");
+                    "APSS_CHASSIS", prf_rec2->chassis, "", "", "");
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                    "apss_BLADE", prf_rec2->blade, "", "", "");
+                    "APSS_BLADE", prf_rec2->blade, "", "", "");
             printf("+ ");
-            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+            DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                     prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                    "apss_NODE", prf_rec2->node, "", "", "");
+                    "APSS_NODE", prf_rec2->node, "", "", "");
         }
         else {
             if (prf_rec1->group != prf_rec2->group)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                        "apss_GROUP", prf_rec1->group, "", "", "");
+                        "APSS_GROUP", prf_rec1->group, "", "", "");
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                        "apss_GROUP", prf_rec2->group, "", "", "");
+                        "APSS_GROUP", prf_rec2->group, "", "", "");
             }
             if (prf_rec1->chassis != prf_rec2->chassis)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                        "apss_CHASSIS", prf_rec1->chassis, "", "", "");
+                        "APSS_CHASSIS", prf_rec1->chassis, "", "", "");
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                        "apss_CHASSIS", prf_rec2->chassis, "", "", "");
+                        "APSS_CHASSIS", prf_rec2->chassis, "", "", "");
             }
             if (prf_rec1->blade != prf_rec2->blade)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                        "apss_BLADE", prf_rec1->blade, "", "", "");
+                        "APSS_BLADE", prf_rec1->blade, "", "", "");
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                        "apss_BLADE", prf_rec2->blade, "", "", "");
+                        "APSS_BLADE", prf_rec2->blade, "", "", "");
             }
             if (prf_rec1->node != prf_rec2->node)
             {
                 printf("- ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
-                        "apss_NODE", prf_rec1->node, "", "", "");
+                        "APSS_NODE", prf_rec1->node, "", "", "");
                 printf("+ ");
-                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_D_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                         prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
-                        "apss_NODE", prf_rec2->node, "", "", "");
+                        "APSS_NODE", prf_rec2->node, "", "", "");
             }
         } 
 
         int i;
         /* router tile record */
-        for(i = 0; i < apss_NUM_INDICES; i++)
+        for(i = 0; i < APSS_NUM_INDICES; i++)
         {
             if (!prf_rec2)
             {
                 printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                 apss_counter_names[i], prf_rec1->counters[i],
                 "", "", "");
@@ -458,7 +458,7 @@ static void darshan_log_print_apss_rec_diff(void *file_rec1, char *file_name1,
             else if (!prf_rec1)
             {
                 printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                 apss_counter_names[i], prf_rec2->counters[i],
                 "", "", "");
@@ -466,13 +466,13 @@ static void darshan_log_print_apss_rec_diff(void *file_rec1, char *file_name1,
             else if (prf_rec1->counters[i] != prf_rec2->counters[i])
             {
                 printf("- ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 prf_rec1->base_rec.rank, prf_rec1->base_rec.id,
                 apss_counter_names[i], prf_rec1->counters[i],
                 "", "", "");
 
                 printf("+ ");
-                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_apss_MOD],
+                DARSHAN_U_COUNTER_PRINT(darshan_module_names[DARSHAN_APSS_MOD],
                 prf_rec2->base_rec.rank, prf_rec2->base_rec.id,
                 apss_counter_names[i], prf_rec2->counters[i],
                 "", "", "");
