@@ -99,6 +99,7 @@ struct darshan_apss_perf_record
     struct darshan_base_record base_rec;
     int64_t group;
     int64_t chassis;
+    int64_t slot;
     int64_t blade;
     int64_t node;
     uint64_t counters[APSS_NUM_INDICES];
@@ -110,6 +111,7 @@ struct darshan_apss_header_record
     int64_t magic;
     int64_t nblades;
     int64_t nchassis;
+    int64_t nslots;
     int64_t ngroups;
     uint64_t appid;
 };
