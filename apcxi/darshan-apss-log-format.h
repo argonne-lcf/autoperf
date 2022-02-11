@@ -4,13 +4,13 @@
  *
  */
 
-#ifndef __APSS_LOG_FORMAT_H
-#define __APSS_LOG_FORMAT_H
+#ifndef __APCXI_LOG_FORMAT_H
+#define __APCXI_LOG_FORMAT_H
 
 /* current AutoPerf Cray XC log format version */
-#define APSS_VER 1
+#define APCXI_VER 1
 
-#define APSS_MAGIC ('A'*0x100000000000000+\
+#define APCXI_MAGIC ('A'*0x100000000000000+\
                             'U'*0x1000000000000+\
                             'T'*0x10000000000+\
                             'O'*0x100000000+\
@@ -19,7 +19,7 @@
                             'R'*0x100+\
                             'F'*0x1)
 
-#define APSS_PERF_COUNTERS \
+#define APCXI_PERF_COUNTERS \
     /* PAPI counters */\
     X(CQ_CQ_OXE_NUM_STALLS) \
     X(CQ_CQ_OXE_NUM_FLITS) \
@@ -72,21 +72,21 @@
     X(HNI_TX_OK_4096_TO_8191) \
     X(HNI_TX_OK_8192_TO_MAX) \
     /* end of counters */\
-    Z(APSS_NUM_INDICES)
+    Z(APCXI_NUM_INDICES)
 
 
 #define X(a) a,
 #define Z(a) a
-/* integer counters for the "APSS" example module */
-enum darshan_apss_perf_indices
+/* integer counters for the "APCXI" example module */
+enum darshan_apcxi_perf_indices
 {
-    APSS_PERF_COUNTERS
+    APCXI_PERF_COUNTERS
 };
 
 #undef Z
 #undef X
 
-/* the darshan_apss_router_record structure encompasses the data/counters
+/* the darshan_apcxi_router_record structure encompasses the data/counters
  * which would actually be logged to file by Darshan for the AP HPE Slingshot
  * module. This example implementation logs the following data for each
  * record:
@@ -94,7 +94,7 @@ enum darshan_apss_perf_indices
  *      - integer I/O counters 
  *      - floating point I/O counters 
  */
-struct darshan_apss_perf_record
+struct darshan_apcxi_perf_record
 {
     struct darshan_base_record base_rec;
     int64_t group;
@@ -102,10 +102,10 @@ struct darshan_apss_perf_record
     int64_t slot;
     int64_t blade;
     int64_t node;
-    uint64_t counters[APSS_NUM_INDICES];
+    uint64_t counters[APCXI_NUM_INDICES];
 };
 
-struct darshan_apss_header_record
+struct darshan_apcxi_header_record
 {
     struct darshan_base_record base_rec;
     int64_t magic;
@@ -116,4 +116,4 @@ struct darshan_apss_header_record
     uint64_t appid;
 };
 
-#endif /* __APSS_LOG_FORMAT_H */
+#endif /* __APCXI_LOG_FORMAT_H */
