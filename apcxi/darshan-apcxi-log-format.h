@@ -91,8 +91,12 @@ enum darshan_apcxi_perf_indices
  * module. This example implementation logs the following data for each
  * record:
  *      - a darshan_base_record structure, which contains the record id & rank
- *      - integer I/O counters 
- *      - floating point I/O counters 
+ *      - the number of the performance counters (see above) monitored is static
+ *      - the number of nic devices on a compute node for which the counters are
+ *      - recorded is not static and is dynamic
+ *      - in order for the record to be contiguous the counters is declared as
+ *      - counters[1][NUM_COUNTERS], the actual record size is calculated based on
+ *      - number of nics
  */
 struct darshan_apcxi_perf_record
 {
@@ -102,7 +106,8 @@ struct darshan_apcxi_perf_record
     int64_t slot;
     int64_t blade;
     int64_t node;
-    uint64_t counters[APCXI_NUM_INDICES];
+    int64_t num_nics;
+    uint64_t counters[1][APCXI_NUM_INDICES];
 };
 
 struct darshan_apcxi_header_record
@@ -115,5 +120,10 @@ struct darshan_apcxi_header_record
     int64_t ngroups;
     uint64_t appid;
 };
+
+/*
+ *  helper function to calculate the size of a APCXI record
+ */
+#define APCXI_PERF_RECORD_SIZE( num_nics ) (sizeof(struct darshan_apcxi_perf_record) + (sizeof(uint64_t) * APCXI_NUM_INDICES * (num_nics - 1)))
 
 #endif /* __APCXI_LOG_FORMAT_H */

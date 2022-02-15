@@ -6,6 +6,12 @@
 
 #define _XOPEN_SOURCE 500
 #define _GNU_SOURCE
+
+/*
+ * TODO: A job id given by the job scheduler uniquely identifies a job at a system level,
+ *       similarly, the application launcher id uniquely identifies an application
+ *       execution on the system.
+ */
 //#ifdef SLURM_JOBID
 #define APP_ID "SLURM_TASK_PID"
 //#endif
@@ -18,8 +24,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <dirent.h>
 #include <assert.h>
-#include <papi.h>
 
 #include "uthash.h"
 #include "darshan.h"
@@ -28,18 +34,21 @@
 
 #include "darshan-apcxi-utils.h"
 #include "crusher_nodelist.h"
+#define MAX_COUNTER_NAME_LENGTH 100
 
 /*
- * PAPI_events are defined by the Aries counters listed in the log header.
+ * apcxi_events are defined by the Cassini counters listed in the log header.
  */
 #define X(a) #a,
 #define Z(a) #a
-static char* PAPI_events[] =
+static char* apcxi_events[] =
 {
     APCXI_PERF_COUNTERS
 };
 #undef X
 #undef Z
+
+char ***apcxi_filenames;
 
 #define MAX_GROUPS (128)
 #define MAX_CHASSIS (MAX_GROUPS*8)
@@ -63,13 +72,13 @@ struct apcxi_runtime
     struct darshan_apcxi_perf_record *perf_record;
     darshan_record_id header_id;
     darshan_record_id rtr_id;
-    int PAPI_event_set;
-    int PAPI_event_count;
+    int num_counters;
     int group;
     int chassis;
     int slot;
     int blade;
     int node;
+    int num_nics;
     int perf_record_marked;
 };
 
@@ -101,55 +110,80 @@ static void apcxi_cleanup(
 #define APCXI_UNLOCK() pthread_mutex_unlock(&apcxi_runtime_mutex)
 
 /*
- * Initialize counters using PAPI
+ * Initialize counters
+ * determine the number of nic devices on the node
+ * build the list of files to read from the sysfs telemetry
  */
 static void initialize_counters (void)
 {
     int i;
     int code = 0;
 
-    PAPI_library_init(PAPI_VER_CURRENT);
-    apcxi_runtime->PAPI_event_set = PAPI_NULL;
-    PAPI_create_eventset(&apcxi_runtime->PAPI_event_set);
-#if 0
-    /* Determine the number of NIC devices - read the number of dirs in /sys/class/cxi/ */
-    int num_nics = 0;
-    struct dirent *dp;
-    DIR *fdir;
-    if ((fdir = opendir("/sys/class/cxi")) == NULL) {
-        fprintf(stderr, "listdir: can't open %s\n", "/sys/class/cxi");
-        return 1;
-    }
-    while ((dp = readdir(fdir)) != NULL) {
-        if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
-            continue;    /* skip self and parent */
-        num_nics++;
-    }
-    closedir(fdir);
 
-#endif
-    /* start with first PAPI counter */
-    for (i = CQ_CQ_OXE_NUM_STALLS;
-            strcmp(PAPI_events[i], "APCXI_NUM_INDICES") != 0;
-            i++)
+    /* start with first apcxi counter */
+    i = CQ_CQ_OXE_NUM_STALLS;
+    while(strcmp(apcxi_events[i], "APCXI_NUM_INDICES") != 0){
+        i++;
+    }
+    apcxi_runtime->num_counters = i;
+
+    // allocate memory space for the sys fs file names
+    // for each of the available nics (num_nics)
+    apcxi_filenames = (char***) malloc(sizeof(char**) * apcxi_runtime->num_nics);
+    for(int i=0; i<apcxi_runtime->num_nics; i++){
+        apcxi_filenames[i] = (char**) malloc(sizeof(char*) * apcxi_runtime->num_counters);
+        for(int j=0; j<apcxi_runtime->num_counters; j++){
+            apcxi_filenames[i][j] = (char*) malloc(sizeof(char) * MAX_COUNTER_NAME_LENGTH);
+        }
+    }
+
+    char line[MAX_COUNTER_NAME_LENGTH];
+    for(int i=0; i<apcxi_runtime->num_counters; i++)
     {
-        PAPI_event_name_to_code(PAPI_events[i], &code);
-        PAPI_add_event(apcxi_runtime->PAPI_event_set, code);
+        size_t ln = strlen(apcxi_events[i]);
+        strcpy(line, apcxi_events[i]);
+        strlwr(line);
+        line[ln] = '\0';
+        for(int j=0; j<apcxi_runtime->num_nics; j++){
+            // /sys/class/cxi/cxi[0..3]
+            char str[MAX_COUNTER_NAME_LENGTH] = "";
+            char buf[5];
+            snprintf(buf, sizeof(buf), "%d", j);
+            strcat(str, "/sys/class/cxi/cxi");
+            strcat(str, buf);
+            strcat(str, "/device/telemetry/");
+            strcat(str, line);
+            strcpy(apcxi_filenames[j][i],str);
+        }
     }
 
-    apcxi_runtime->PAPI_event_count = i;
-
-    PAPI_start(apcxi_runtime->PAPI_event_set);
-
+    FILE *fff;
+    for(int i=0; i<apcxi_runtime->num_nics; i++){
+        for(int j=0; j<apcxi_runtime->num_counters; j++){
+            fff = fopen(apcxi_filenames[i][j], "r");
+            if (fff == NULL) {
+                fprintf(stderr,"\tError opening %s!\n",apcxi_filenames[i][j]);
+            }
+            else {
+                uint64_t b, c;
+                fscanf(fff,"%lu@%lu.%lu",&apcxi_runtime->perf_record->counters[i][j], &b, &c);
+                fclose(fff);
+            }
+        }
+    }
     return;
 }
 
 static void finalize_counters (void)
 {
-    PAPI_cleanup_eventset(apcxi_runtime->PAPI_event_set);
-    PAPI_destroy_eventset(&apcxi_runtime->PAPI_event_set);
-    PAPI_shutdown();
-
+    // free apcxi_filenames
+    for(int i=0; i<apcxi_runtime->num_nics; i++){
+        for(int j=0; j<apcxi_runtime->num_counters; j++){
+            free(apcxi_filenames[i][j]);
+        }
+        free(apcxi_filenames[i]);
+    }
+    free(apcxi_filenames);
     return;
 }
 
@@ -159,15 +193,28 @@ static void finalize_counters (void)
 static void capture(struct darshan_apcxi_perf_record *rec,
         darshan_record_id rec_id)
 {
-    PAPI_stop(apcxi_runtime->PAPI_event_set,
-            (long long*) &rec->counters[CQ_CQ_OXE_NUM_STALLS]);
-    PAPI_reset(apcxi_runtime->PAPI_event_set);
+    FILE *fff;
+    for(int i=0; i<apcxi_runtime->num_nics; i++){
+        for(int j=0; j<apcxi_runtime->num_counters; j++){
+            fff = fopen(apcxi_filenames[i][j], "r");
+            if (fff == NULL) {
+                fprintf(stderr,"\tError opening %s!\n",apcxi_filenames[i][j]);
+            }
+            else {
+                uint64_t a, b, c;
+                fscanf(fff,"%lu@%lu.%lu", &a, &b, &c);
+                apcxi_runtime->perf_record->counters[i][j] = a - apcxi_runtime->perf_record->counters[i][j];
+                fclose(fff);
+            }
+        }
+    }
 
     rec->group   = apcxi_runtime->group;
     rec->chassis = apcxi_runtime->chassis;
     rec->slot = apcxi_runtime->slot;
     rec->blade   = apcxi_runtime->blade;
     rec->node    = apcxi_runtime->node;
+    rec->num_nics    = apcxi_runtime->num_nics;
     rec->base_rec.id = rec_id;
     rec->base_rec.rank = my_rank;
 
@@ -188,6 +235,24 @@ void apcxi_runtime_initialize()
 
     APCXI_LOCK();
 
+    /*
+     *  Determine the number of available NIC devices on the compute node
+     *  read the number of dirs in /sys/class/cxi/
+     */
+    int num_nics = 0;
+    struct dirent *dp;
+    DIR *fdir;
+    if ((fdir = opendir("/sys/class/cxi")) == NULL) {
+        fprintf(stderr, "listdir: can't open %s\n", "/sys/class/cxi");
+        return;
+    }
+    while ((dp = readdir(fdir)) != NULL) {
+        if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+            continue;    /* skip self and parent */
+        num_nics++;
+    }
+    closedir(fdir);
+
 
     /* don't do anything if already initialized */
     if(apcxi_runtime)
@@ -198,7 +263,7 @@ void apcxi_runtime_initialize()
 
 
     apcxi_buf_size = sizeof(struct darshan_apcxi_header_record) + 
-        sizeof(struct darshan_apcxi_perf_record);
+        APCXI_PERF_RECORD_SIZE(num_nics);
 
     /* register the APCXI module with the darshan-core component */
     darshan_core_register_module(
@@ -207,7 +272,6 @@ void apcxi_runtime_initialize()
             &apcxi_buf_size,
             &my_rank,
             NULL);
-
 
     /* initialize module's global state */
     apcxi_runtime = malloc(sizeof(*apcxi_runtime));
@@ -218,6 +282,7 @@ void apcxi_runtime_initialize()
         return;
     }
     memset(apcxi_runtime, 0, sizeof(*apcxi_runtime));
+    apcxi_runtime->num_nics = num_nics;
 
     if (my_rank == 0)
     {
@@ -258,7 +323,8 @@ void apcxi_runtime_initialize()
             "APCXI",   // we want the record for each rank to be treated as shared records so that mpi_redux can operate on
             //rtr_rec_name,
             DARSHAN_APCXI_MOD,
-            sizeof(struct darshan_apcxi_perf_record),
+            APCXI_PERF_RECORD_SIZE(num_nics),
+            //sizeof(struct darshan_apcxi_perf_record),
             NULL);
     if(!(apcxi_runtime->perf_record))
     {
@@ -268,6 +334,7 @@ void apcxi_runtime_initialize()
         APCXI_UNLOCK();
         return;
     }
+    apcxi_runtime->perf_record->num_nics = num_nics;
     initialize_counters();
     APCXI_UNLOCK();
 
@@ -455,7 +522,8 @@ static void apcxi_output(
 
     if (apcxi_runtime->perf_record_marked == -1) 
     { 
-        *apcxi_buf_sz += sizeof( *apcxi_runtime->perf_record); 
+        //*apcxi_buf_sz += sizeof( *apcxi_runtime->perf_record);
+        *apcxi_buf_sz += APCXI_PERF_RECORD_SIZE(apcxi_runtime->num_nics);
     }
 
     APCXI_UNLOCK();

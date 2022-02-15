@@ -2,6 +2,7 @@
 #define __APCXI_UTILS_H__
 
 #include <regex.h>
+#include <ctype.h>
 extern char crusher_nodelist[192][14];
 static void search_hwinfo(const char * mstr, char *mode)
 {
@@ -70,6 +71,15 @@ static unsigned int count_bits(unsigned int *bitvec, int cnt)
         count += __builtin_popcount(bitvec[i]);
     }
     return count;
+}
+
+void strlwr(char *str)
+{
+    char *p = str;
+  while (*p!='\0') {
+     *p = tolower((char)*p);
+      p++;
+  }
 }
 
 #endif
