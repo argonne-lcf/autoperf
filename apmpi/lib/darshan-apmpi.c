@@ -270,6 +270,8 @@ struct apmpi_runtime
 static struct apmpi_runtime *apmpi_runtime = NULL;
 static pthread_mutex_t apmpi_runtime_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
+static int apmpi_runtime_init_attempted = 0;
+
 /* my_rank indicates the MPI rank of this process */
 static int my_rank = -1;
 
@@ -344,6 +346,8 @@ static void capture(struct darshan_apmpi_perf_record *rec,
 static void apmpi_runtime_initialize()
 {
     size_t apmpi_buf_size;
+    size_t apmpi_rec_count = 1;
+    int ret;
 
     darshan_module_funcs mod_funcs = {
 #ifdef HAVE_MPI
@@ -354,6 +358,9 @@ static void apmpi_runtime_initialize()
         };
 
     APMPI_LOCK();
+
+    /* if this attempt at initializing fails, we won't try again */
+    apmpi_runtime_init_attempted = 1;
 
     /* don't do anything if already initialized */
     if(apmpi_runtime)
@@ -366,12 +373,18 @@ static void apmpi_runtime_initialize()
                      sizeof(struct darshan_apmpi_perf_record);
 
     /* register the apmpi module with the darshan-core component */
-    darshan_core_register_module(
+    ret = darshan_core_register_module(
         DARSHAN_APMPI_MOD,
         mod_funcs,
-        &apmpi_buf_size,
+        apmpi_buf_size,
+        &apmpi_rec_count,
         &my_rank,
         NULL);
+    if(ret < 0)
+    {
+        APMPI_UNLOCK();
+        return;
+    }
 
     /* initialize module's global state */
     apmpi_runtime = malloc(sizeof(*apmpi_runtime));
@@ -635,7 +648,8 @@ static void apmpi_cleanup()
 #define APMPI_PRE_RECORD() do { \
        if(!__darshan_disabled) { \
            APMPI_LOCK(); \
-           if(!apmpi_runtime) apmpi_runtime_initialize(); \
+           if(!apmpi_runtime && !apmpi_runtime_init_attempted) \
+               apmpi_runtime_initialize(); \
            if(apmpi_runtime && !apmpi_runtime->frozen) break; \
            APMPI_UNLOCK(); \
        } \
