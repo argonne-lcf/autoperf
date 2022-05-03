@@ -152,7 +152,9 @@ static void capture(struct darshan_apxc_perf_record *rec,
 void apxc_runtime_initialize()
 {
     size_t apxc_buf_size;
+    size_t apxc_rec_count = 1;
     char rtr_rec_name[128];
+    int ret;
 
     darshan_module_funcs mod_funcs = {
 //#ifdef HAVE_MPI
@@ -177,12 +179,18 @@ void apxc_runtime_initialize()
                     sizeof(struct darshan_apxc_perf_record);
 
     /* register the APXC module with the darshan-core component */
-    darshan_core_register_module(
+    ret = darshan_core_register_module(
         DARSHAN_APXC_MOD,
         mod_funcs,
-        &apxc_buf_size,
+        apxc_buf_size,
+        &apxc_rec_count,
         &my_rank,
         NULL);
+    if(ret < 0)
+    {
+        APXC_UNLOCK();
+        return;
+    }
 
 
     /* initialize module's global state */
