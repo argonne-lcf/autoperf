@@ -4,9 +4,9 @@ import ctypes
 import numpy as np
 import darshan.backend.cffi_backend
 
-# apss structure defs
+# apcxi structure defs
 structdefs = '''
-struct darshan_apss_perf_record
+struct darshan_apcxi_perf_record
 {
     struct darshan_base_record base_rec;
     int64_t group;
@@ -15,7 +15,7 @@ struct darshan_apss_perf_record
     int64_t node;
     uint64_t counters[10];
 };
-struct darshan_apss_header_record
+struct darshan_apcxi_header_record
 {
     struct darshan_base_record base_rec;
     int64_t magic;
@@ -25,16 +25,16 @@ struct darshan_apss_header_record
     uint64_t appid;
 };
 
-extern char *apss_counter_names[];
+extern char *apcxi_counter_names[];
 
 '''
 
-def get_apss_defs():
+def get_apcxi_defs():
   return structdefs
 
 
 # load header record
-def log_get_apss_record(log, mod_name, structname, dtype='dict'):
+def log_get_apcxi_record(log, mod_name, structname, dtype='dict'):
     from darshan.backend.cffi_backend import ffi, libdutil, log_get_modules, counter_names, _structdefs
 
     modules = log_get_modules(log)
@@ -47,7 +47,7 @@ def log_get_apss_record(log, mod_name, structname, dtype='dict'):
     if r < 1:
         return None
 
-    if mod_type == 'struct darshan_apss_header_record **':
+    if mod_type == 'struct darshan_apcxi_header_record **':
       hdr = ffi.cast(mod_type, buf)
       rec['id'] = hdr[0].base_rec.id
       rec['rank'] = hdr[0].base_rec.rank

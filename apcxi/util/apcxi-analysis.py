@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# DarshanUtils for Python for processing APSS records
+# DarshanUtils for Python for processing APCXI records
 
 # This script gives an overview of features provided by the Python bindings for DarshanUtils.
 
-# By default all APSS module records, metadata, and the name records are loaded when opening a Darshan log:
+# By default all APCXI module records, metadata, and the name records are loaded when opening a Darshan log:
 
 import argparse
 import darshan
@@ -48,19 +48,19 @@ def main():
     report = darshan.DarshanReport(args.logname[0], read_all=False)
     report.info()
    
-    if "APSS" not in report.modules:
+    if "APCXI" not in report.modules:
         print("This log does not contain AutoPerf XC data")
         return
-    r = report.mod_read_all_apss_records("APSS")
+    r = report.mod_read_all_apcxi_records("APCXI")
 
     report.update_name_records()
     report.info()
    
-    #pdf = matplotlib.backends.backend_pdf.PdfPages("apss_output.pdf")
+    #pdf = matplotlib.backends.backend_pdf.PdfPages("apcxi_output.pdf")
 
-    header_rec = report.records["APSS"][0]
+    header_rec = report.records["APCXI"][0]
     
-    for rec in report.records["APSS"][1:]:
+    for rec in report.records["APCXI"][1:]:
 	# skip the first record which is header record
         print(rec)
 

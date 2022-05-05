@@ -139,8 +139,8 @@ static int darshan_log_get_apxc_rec(darshan_fd fd, void** buf_p)
                     DARSHAN_BSWAP64(&prf_rec->counters[i]);
                 }
             }
+            *buf_p = buffer;
         }
-        *buf_p = buffer;
         return(1);
     }
     else if (ret < 0)
