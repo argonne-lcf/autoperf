@@ -59,13 +59,19 @@ typedef long long ap_bytes_t;
 
 #define BYTECOUNT(TYPE, COUNT) \
           int tsize; \
-          PMPI_Type_size(TYPE, &tsize); \
-          ap_bytes_t bytes = (COUNT) * tsize
+          ap_bytes_t bytes = 0; \
+          if((COUNT > 0) && (TYPE != MPI_DATATYPE_NULL)) { \
+              PMPI_Type_size(TYPE, &tsize); \
+              bytes = (COUNT) * tsize; \
+          }
 
 #define BYTECOUNTND(TYPE, COUNT) \
           int tsize2; \
-          PMPI_Type_size(TYPE, &tsize2); \
-          bytes = (COUNT) * tsize2
+          bytes = 0; \
+          if((COUNT > 0) && (TYPE != MPI_DATATYPE_NULL)) { \
+              PMPI_Type_size(TYPE, &tsize2); \
+              bytes = (COUNT) * tsize2; \
+          }
 
 
 
@@ -1474,12 +1480,10 @@ int DARSHAN_DECL(MPI_Alltoallv)(const void *sendbuf, const int *sendcounts, cons
   
     TIME_SYNC(__real_PMPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, comm));
 
-    int tsize;
-    PMPI_Type_size(recvtype, &tsize);
     int i, tasks, count = 0;
     PMPI_Comm_size(comm, &tasks);
     for (i=0; i<tasks; i++) count += recvcounts[i];
-    ap_bytes_t bytes = (ap_bytes_t) (count * tsize);
+    BYTECOUNT(recvtype, count);
 
     APMPI_PRE_RECORD();
     APMPI_RECORD_UPDATE_SYNC(MPI_ALLTOALLV);
@@ -1498,13 +1502,15 @@ int DARSHAN_DECL(MPI_Alltoallw)(const void *sendbuf, const int sendcounts[], con
   
     TIME_SYNC(__real_PMPI_Alltoallw(sendbuf, sendcounts, sdispls, sendtypes, recvbuf, recvcounts, rdispls, recvtypes, comm));
 
-    ap_bytes_t bytes = 0;
-    int i, tasks, tsize;
+    ap_bytes_t bytes = 0, tmp_bytes = 0;
+    int i, tasks;
     PMPI_Comm_size(comm, &tasks);
     for (i=0; i<tasks; i++) {
-      PMPI_Type_size(recvtypes[i], &tsize);
-      bytes += recvcounts[i]*tsize;
-     }
+      BYTECOUNTND(recvtypes[i], recvcounts[i]);
+      tmp_bytes += bytes;
+    }
+    bytes = tmp_bytes;
+
 
     APMPI_PRE_RECORD();
     APMPI_RECORD_UPDATE_SYNC(MPI_ALLTOALLW);
@@ -1698,13 +1704,11 @@ int DARSHAN_DECL(MPI_Reduce_scatter)(const void *sendbuf, void *recvbuf, const i
 
     TIME_SYNC(__real_PMPI_Reduce_scatter(sendbuf, recvbuf, recvcounts,
                        datatype, op, comm));
-    int tsize;
-    PMPI_Type_size(datatype, &tsize);
 
     int i, tasks, num = 0;
     PMPI_Comm_size(comm, &tasks);
     for (i=0; i<tasks; i++) num += recvcounts[i];
-    ap_bytes_t bytes = num * tsize;
+    BYTECOUNT(datatype, num);
 
     APMPI_PRE_RECORD();
     APMPI_RECORD_UPDATE_SYNC(MPI_REDUCE_SCATTER);
@@ -1844,12 +1848,10 @@ int DARSHAN_DECL(MPI_Ialltoallv)(const void *sendbuf, const int *sendcounts, con
   
     TIME(__real_PMPI_Ialltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, comm, request));
 
-    int tsize;
-    PMPI_Type_size(recvtype, &tsize);
     int i, tasks, count = 0;
     PMPI_Comm_size(comm, &tasks);
     for (i=0; i<tasks; i++) count += recvcounts[i];
-    ap_bytes_t bytes = (ap_bytes_t) (count * tsize);
+    BYTECOUNT(recvtype, count);
 
     APMPI_PRE_RECORD();
     APMPI_RECORD_UPDATE(MPI_IALLTOALLV);
@@ -1868,13 +1870,14 @@ int DARSHAN_DECL(MPI_Ialltoallw)(const void *sendbuf, const int sendcounts[], co
   
     TIME(__real_PMPI_Ialltoallw(sendbuf, sendcounts, sdispls, sendtypes, recvbuf, recvcounts, rdispls, recvtypes, comm, request));
 
-    ap_bytes_t bytes = 0;
-    int i, tasks, tsize;
+    ap_bytes_t bytes = 0, tmp_bytes = 0;
+    int i, tasks;
     PMPI_Comm_size(comm, &tasks);
     for (i=0; i<tasks; i++) {
-      PMPI_Type_size(recvtypes[i], &tsize);
-      bytes += recvcounts[i]*tsize;
-     }
+      BYTECOUNTND(recvtypes[i], recvcounts[i]);
+      tmp_bytes += bytes;
+    }
+    bytes = tmp_bytes;
 
     APMPI_PRE_RECORD();
     APMPI_RECORD_UPDATE(MPI_IALLTOALLW);
@@ -2068,13 +2071,11 @@ int DARSHAN_DECL(MPI_Ireduce_scatter)(const void *sendbuf, void *recvbuf, const 
 
     TIME(__real_PMPI_Ireduce_scatter(sendbuf, recvbuf, recvcounts,
                        datatype, op, comm, request));
-    int tsize;
-    PMPI_Type_size(datatype, &tsize);
 
     int i, tasks, num = 0;
     PMPI_Comm_size(comm, &tasks);
     for (i=0; i<tasks; i++) num += recvcounts[i];
-    ap_bytes_t bytes = num * tsize;
+    BYTECOUNT(datatype, num);
 
     APMPI_PRE_RECORD();
     APMPI_RECORD_UPDATE(MPI_IREDUCE_SCATTER);
