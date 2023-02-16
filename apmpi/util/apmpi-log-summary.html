@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en"
+   xmlns="http://www.w3.org/1999/xhtml"
+   xmlns:py="http://genshi.edgewall.org/">
+   <head>
+      <title>Darshan Report</title>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"/>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+   </head>
+   <body style="font-family: Gill Sans MT">
+      <div class="panel panel-primary">
+         <div class="panel-heading">Darshan Summary Report for <b>${var.exe.split()[0].split('/')[-1]}</b> on ${var.date.date()}</div>
+         <div class="panel-body">${var.exe}</div>
+      </div>
+      <div class="container">
+         <table class="table">
+            <thead>
+               <tr>
+                  <th>Jobid</th>
+                  <th>uid</th>
+                  <th>processes</th>
+                  <th>runtime (seconds)</th>
+               </tr>
+            </thead>
+            <tbody>
+               <tr>
+                  <td>${var.jid}</td>
+                  <td>${var.uid}</td>
+                  <td>${var.nprocs}</td>
+                  <td>${var.runtime}</td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+      <div class="panel panel-default">
+         <div class="panel-heading">Performance Estimate</div>
+         <div class="panel-body">I/O performance estimate (at the POSIX layer): transferred 107835432.9 MiB at 44357.76 MiB/s</div>
+      </div>
+      <div class="panel-group">
+         <div class="panel panel-primary">
+            <div class="panel-heading">
+               <h4 class="panel-title">
+                  <a data-toggle="collapse" href="#collapse0">Documentation</a>
+               </h4>
+            </div>
+            <div id="collapse0" class="panel-collapse collapse">
+               <div class="panel-body">
+                  <div class="container">
+                     <div class="row">
+                        <div class="col-lg-6">
+                           <div class="list-group">
+                              <a class="list-group-item" href="https://www.mcs.anl.gov/research/projects/darshan/">Darshan Home</a>
+                              <a class="list-group-item" href="https://www.mcs.anl.gov/research/projects/darshan/documentation/">Darshan Documentation</a>
+                              <a class="list-group-item" href="https://www.mcs.anl.gov/research/projects/darshan/docs/darshan-util.html#_guide_to_darshan_parser_output">Counter Documentation</a>
+                           </div>
+                        </div>
+                        <div class="col-lg-6">
+                           <img src="https://www.mcs.anl.gov/research/projects/darshan/wp-content/uploads/sites/54/2018/05/darshan-web-logo.png" class="img-rounded" alt="darshan logo"/>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div py:if ="var.apmpi_call_times_variance" class="panel panel-primary">
+         <div class="panel-heading">
+            <h4 class="panel-title">
+               <a data-toggle="collapse" href="#collapse1">APMPI</a>
+            </h4>
+         </div>
+         <div id="collapse1" class="panel-collapse collapse in">
+            <div class="panel-body">
+               <div class="container">
+                  <div class="row">
+                     <div class="col-lg-6">
+                        <img class="img-rounded" alt="APMPI-call-times-variance" src="data:image/png;base64,${var.apmpi_call_times_variance}"/>
+                     </div>
+                     <div class="col-lg-6">
+                        <img class="img-rounded" alt="APMPI-call-time-distribution" src="data:image/png;base64,${var.apmpi_call_time_distribution}"/>
+                     </div>
+                  </div>
+                  <div class="row">
+                     <div class="col-lg-6">
+                        <img class="img-rounded" alt="APMPI-call-bytes-per-op" src="data:image/png;base64,${var.apmpi_call_bytes_per_op}"/>
+                     </div>
+                     <div class="col-lg-6">
+                        <img class="img-rounded" alt="APMPI-call-rank0-message-size-distributions" src="data:image/png;base64,${var.apmpi_call_rank0_msg_dist}"/>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div class="panel-body">
+               <div class="container">
+                  <div class="row">
+                     <div class="col-lg-6">
+                        <h4>APMPI: MPI Stats. from rank 0 MPI time</h4>
+                        <table class="table">
+                           <thead>
+                              <tr>
+                                 <th>Rank</th>
+                                 <th>Node_ID</th>
+                                 <th>MPI_OP</th>
+                                 <th>Total_Time</th>
+                                 <th>Count</th>
+                                 <th>Total_Bytes</th>
+                                 <th>[0-256B]</th>
+                                 <th>[256-1KB]</th>
+                                 <th>[1K-8KB]</th>
+                                 <th>[8K-256KB]</th>
+                                 <th>[256K-1MB]</th>
+                                 <th>[1MB+]</th>
+                                 <th>Min_Time</th>
+                                 <th>Max_Time</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              <py:for each="row in var.apmpi_zero_rank">
+                                 <tr>
+                                    <py:for each="r in row">
+                                       <td>${r}</td>
+                                    </py:for>
+                                 </tr>
+                              </py:for>
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div class="panel-body">
+               <div class="container">
+                  <div class="row">
+                     <div class="col-lg-6">
+                        <h4>APMPI: MPI Stats. from rank with maximum MPI time</h4>
+                        <table class="table">
+                           <thead>
+                              <tr>
+                                 <th>Rank</th>
+                                 <th>Node_ID</th>
+                                 <th>MPI_OP</th>
+                                 <th>Total_Time</th>
+                                 <th>Count</th>
+                                 <th>Total_Bytes</th>
+                                 <th>[0-256B]</th>
+                                 <th>[256-1KB]</th>
+                                 <th>[1K-8KB]</th>
+                                 <th>[8K-256KB]</th>
+                                 <th>[256K-1MB]</th>
+                                 <th>[1MB+]</th>
+                                 <th>Min_Time</th>
+                                 <th>Max_Time</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              <py:for each="row in var.apmpi_max_rank">
+                                 <tr>
+                                    <py:for each="r in row">
+                                       <td>${r}</td>
+                                    </py:for>
+                                 </tr>
+                              </py:for>
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div class="panel-body">
+               <div class="container">
+                  <div class="row">
+                     <div class="col-lg-6">
+                        <h4>APMPI: MPI Stats. from rank with minimum MPI time</h4>
+                        <table class="table">
+                           <thead>
+                              <tr>
+                                 <th>Rank</th>
+                                 <th>Node_ID</th>
+                                 <th>MPI_OP</th>
+                                 <th>Total_Time</th>
+                                 <th>Count</th>
+                                 <th>Total_Bytes</th>
+                                 <th>[0-256B]</th>
+                                 <th>[256-1KB]</th>
+                                 <th>[1K-8KB]</th>
+                                 <th>[8K-256KB]</th>
+                                 <th>[256K-1MB]</th>
+                                 <th>[1MB+]</th>
+                                 <th>Min_Time</th>
+                                 <th>Max_Time</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              <py:for each="row in var.apmpi_min_rank">
+                                 <tr>
+                                    <py:for each="r in row">
+                                       <td>${r}</td>
+                                    </py:for>
+                                 </tr>
+                              </py:for>
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div class="panel-body">
+               <div class="container">
+                  <div class="row">
+                     <div class="col-lg-6">
+                        <h4>APMPI: MPI Stats. from rank with mean MPI time</h4>
+                        <table class="table">
+                           <thead>
+                              <tr>
+                                 <th>Rank</th>
+                                 <th>Node_ID</th>
+                                 <th>MPI_OP</th>
+                                 <th>Total_Time</th>
+                                 <th>Count</th>
+                                 <th>Total_Bytes</th>
+                                 <th>[0-256B]</th>
+                                 <th>[256-1KB]</th>
+                                 <th>[1K-8KB]</th>
+                                 <th>[8K-256KB]</th>
+                                 <th>[256K-1MB]</th>
+                                 <th>[1MB+]</th>
+                                 <th>Min_Time</th>
+                                 <th>Max_Time</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              <py:for each="row in var.apmpi_mean_rank">
+                                 <tr>
+                                    <py:for each="r in row">
+                                       <td>${r}</td>
+                                    </py:for>
+                                 </tr>
+                              </py:for>
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </body>
+</html>
