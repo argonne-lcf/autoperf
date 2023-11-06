@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <dlfcn.h>
 #include <assert.h>
 
 #include "uthash.h"
@@ -24,12 +25,28 @@ typedef long long ap_bytes_t;
 #define MIN(x,y) ((x==0.0)?y:((x<y)?x:y))
 #define APMPI_WTIME() __darshan_disabled ? 0 : darshan_core_wtime();
 
+#ifdef DARSHAN_PRELOAD
+extern int (*__real_MPI_Barrier)(MPI_Comm comm);
+#define MAP_OR_FAIL_BARRIER() \
+    if (!(__real_PMPI_Barrier)) \
+    { \
+        __real_PMPI_Barrier = dlsym(RTLD_NEXT, "PMPI_Barrier"); \
+        if(!(__real_PMPI_Barrier)) { \
+            darshan_core_fprintf(stderr, "Darshan failed to map symbol: PMPI_Barrier\n"); \
+            exit(1); \
+       } \
+    }
+#else
+extern int __real_MPI_Barrier(MPI_Comm comm);
+#define MAP_OR_FAIL_BARRIER() do {} while(0)
+#endif
+
 #ifdef __APMPI_COLL_SYNC
 
 #define TIME_SYNC(FUNC) \
           double tm1, tm2, tm3, tdiff, tsync;\
           int ret; \
-          MAP_OR_FAIL(PMPI_Barrier);\
+          MAP_OR_FAIL_BARRIER(); \
           tm1 = APMPI_WTIME(); \
           ret = __real_PMPI_Barrier(comm); \
           tm2 = APMPI_WTIME(); \
